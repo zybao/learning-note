@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>My First Web Page</h1>
+        <p>My first paragraph.</p>
+        <button onclick="myFunction()">点击这里</button>
+        <script>
+        function myFunction()
+        {
+        document.write("糟糕，文档消失了");
+        // 输出内容
+        document.getElementById("demo").innerHTML="Hello \
+            world";
+        var x = 2;
+        var y = 3;
+        var z = x + y;
+        var b = true;
+        var cars = new Array();
+        cars[0] = "Audi";
+        cars[1] = "BMW";
+        cars[2] = "Volvo";
+        // var cars = new Array("Audi", "BMW", "Volvo");
+        person = new Object();
+        person.firstname="Bill";
+        person.lastname="Gates";
+        person.age=56;
+        person.eyecolor="blue";
+
+        var message = "Hello world!";
+        var x = message.toUpperCase();
+        }
+
+        function function1(name, job)
+        {
+        alert("Welcome " + name + ". the " + job);
+        }
+        function add(a, b)
+        {
+            return a + b;
+        }
+
+        function f()
+        {
+            var person = {fname:"John",
+            lname:"Doe",
+            age:25};
+            for (x in person)
+            {
+                txt = txt + person[x];
+            }
+        }
+        </script>
+    </body>
+</html>

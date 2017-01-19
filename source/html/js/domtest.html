@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+</head>
+<body>
+<script>
+document.write(Date());
+</script>
+
+<p id="p1">Hello World!</p>
+<h1 id="id1">My Heading 1</h1>
+<script>
+document.getElementById("p1").innerHTML="New text!";
+document.getElementById("p1").style.color="blue";
+</script>
+
+<button type="button" onclick="document.getElementById('id1').style.color='red'">
+点击这里
+</button>
+
+<div id="div1">
+    <p id="p1">这是一个段落</p>
+    <p id="p2">这是另一个段落</p>
+</div>
+<script>
+var para=document.createElement("p");
+var node=document.createTextNode("这是新段落");
+para.appendChild(node);
+var element=document.getElementById("div1");
+element.appendChild(para);
+</script>
+</body>
+</html>

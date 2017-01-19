@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+function newDoc()
+{
+    window.location.assign("http://www.w3school.com.cn")
+}
+function goBack()
+{
+    window.history.back();
+}
+function goForward()
+{
+    window.history.forward();
+}
+</script>
+</head>
+<body>
+<input type="button" value="load Doc" onclick="newDoc()">
+<input type="button" value="go back" onclick="goBack()">
+<input type="button" value="go forward" onclick="goForward()">
+<div id="example"></div>
+<script>
+txt = "<p>Browser CodeName: " + navigator.appCodeName + "</p>";
+txt += "<p>Browser Name: " + navigator.appName + "</p>";
+txt += "<p>Browser Version: " + navigator.appVersion + "</p>";
+txt += "<p>Cookies Enabled: " + navigator.cookieEnabled + "</p>";
+txt += "<p>Platform: " + navigator.platform + "</p>";
+txt += "<p>User-agent header: " + navigator.userAgent + "</p>";
+txt += "<p>User-agent language: " + navigator.systemLanguage + "</p>";
+document.getElementById("example").innerHTML=txt;
+</script>
+</body>
+</html>
