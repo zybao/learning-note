@@ -1,0 +1,15 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+
+<body>
+    <h1>RxJava 错误处理操作符(Error Handling Operators) </h1>
+    <p>一般来说，Observable不会抛异常。它会调用 onError 终止Observable序列，以此通知所有的观察者发生了一个不可恢复的错误。 但是，也存在一些异常。例如，如果 onError 调用失败了，Observable不会尝试再次调用 onError 去通知观察者，它会抛出 RuntimeException，OnErrorFailedException 或者 OnErrorNotImplementedException。</p>
+    <p>有时我们希望观察者或者操作符应该对异常发生时的 onError 通知做出合适的响应，而不是捕获(catch)异常。很多操作符可用于对Observable发射的onError通知做出响应或者从错误中恢复，例如，你可以： 吞掉这个错误，切换到一个备用的Observable继续发射数据 吞掉这个错误然后发射默认值 吞掉这个错误并立即尝试重启这个Observable 吞掉这个错误，在一些回退间隔后重启这个Observable
+    </p>
+</body>
+
+</html>>

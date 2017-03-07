@@ -216,4 +216,14 @@ AndriodSchedulers.mainThread();
 
     其他如observable.toList()、observable.connect()、observable.publish()等等；
 
+### 错误处理操作符
+#### Catch
+
+RxJava将Catch实现为三个不同的操作符：
+
+onErrorReturn：让Observable遇到错误时发射一个特殊的项并且正常终止。
+
+onErrorResumeNext：让Observable在遇到错误时开始发射第二个Observable的数据序列。
+
+onExceptionResumeNext：让Observable在遇到错误时继续发射后面的数据项。
 
