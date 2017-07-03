@@ -1,0 +1,5 @@
+# Creating Obsevalbles
+## just()
+```java
+
+```
