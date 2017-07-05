@@ -147,3 +147,11 @@ static ThreadLocalMap createInheritedMap(ThreadLocalMap parentMap) {
 * 那么解决办法就是 我们在新线程中，要把父线程的 `threadlocals` 的值 给复制到 新线程中的 `threadlocals` 中来。这样，我们在新线程中得到的 `threadlocals` 才会有东西，再通过 `threadlocal.get()` 中的 `threadlocal`，就会得到值。
 
 # 线程池的情况 [transmittable-thread-local](https://github.com/alibaba/transmittable-thread-local)
+
+
+# 应用
+
+* Struts2中Action的管理
+* Spring中数据库模板Connection的管理
+* Hibernate中Session的管理
+* MyBatis中SQLSession的管理
