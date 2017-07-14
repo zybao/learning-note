@@ -4,13 +4,13 @@
 * getClass()
 
 # 创建实例
-(1)
+1. 使用Class对象的newInstance()方法来创建Class对象对应类的实例
 ```java
 Class<?> clazz = String.class;
 Object obj = clazz.newInstance();
 ```
 
-(2)
+2. 先通过Class对象获取指定的Constructor对象，再调用Constructor对象的newInstance()方法来创建实例。这种方法可以用指定的构造器构造类的实例。
 ```java
 Class<?> clazz = String.class;
 Constructor c = clazz.getConstructor(String.class);
