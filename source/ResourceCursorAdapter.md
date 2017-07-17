@@ -1,0 +1,2 @@
+ResourceCursorAdapter 继承于CursorAdapter，它包含LayoutInflater对象，可以把xml转化成view。成员函数newView和 newDropDownView，根据构造函数初始化时传入或是setViewResource设置的资源id，产生对应的view并返回。
+
