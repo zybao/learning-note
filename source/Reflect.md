@@ -1,34 +1,85 @@
-# 获取Class对象
-* forName
-* class文件
-* getClass()
+1. 实例化Class对象，有三种方式，
 
-# 创建实例
-1. 使用Class对象的newInstance()方法来创建Class对象对应类的实例
+    Class.forName(类名全路径); //通过Class的静态方法
+
+    对象.getClass() //通过对象.getClass方法
+    
+    int.class //基本数据类型及基本数据类型的封装了，例如Integer
+
+2. 获取父类
 ```java
-Class<?> clazz = String.class;
-Object obj = clazz.newInstance();
+    Class<?> clazz  = Class.forName(类名全路径); //通过Class的静态方法
+    Class<?> superclass = clazz.getSuperclass();
+```
+3. 获取实现接口
+```java
+    Class<?> clazz  = Class.forName(类名全路径); //通过Class的静态方法 
+    Class<?>[] interfaces = clazz.getInterfaces()
 ```
 
-2. 先通过Class对象获取指定的Constructor对象，再调用Constructor对象的newInstance()方法来创建实例。这种方法可以用指定的构造器构造类的实例。
+4. 获取指定参数构造函数及实例化
 ```java
-Class<?> clazz = String.class;
-Constructor c = clazz.getConstructor(String.class);
-Object obj = c.newInstance("12345");
+    Class<?> clazz  = Class.forName(类名全路径); //通过Class的静态方法
+    Constructor<?> constructor = clazz.getConstructor(Class<?>  ... class);//获取公共的
+    Constructor<?> constructor = clazz.getDeclaredConstructor()//获取私有的 
+    constructor.newInstance(Object args);
+```
+5. 获取所有构造函数及构造参数的类型
+```java
+        Class<?> clazz  = Class.forName(类名全路径); //通过Class的静态方法
+        Constructor<?>[] constructors = clazz.getConstructors();//公共的
+        Constructor<?>[] constructors = clazz.getDeclaredConstructors()//包括私有的
+
+         for (int i = 0; i < constructors.length; i++) {
+            Class<?> clazzs[] = constructors[i].getParameterTypes();//获取类型
+            System.out.print("constructors[" + i + "] (");
+            for (int j = 0; j < clazzs.length; j++) {
+                if (j == clazzs.length - 1)
+                    System.out.print(clazzs[j].getName());
+                else
+                    System.out.print(clazzs[j].getName() + ",");
+            }
+            System.out.println(")");
+        }
 ```
 
-# 获取方法
-* getDeclaredMethods()方法返回类或接口声明的所有方法，包括公共、保护、默认（包）访问和私有方法，但不包括继承的方法。
-`public Method[] getDeclaredMethods() throws SecurityException`
-* getMethods()方法返回某个类的所有公用（public）方法，包括其继承类的公用方法。
-`public Method[] getMethods() throws SecurityException`
-* getMethod方法返回一个特定的方法，其中第一个参数为方法名称，后面的参数为方法的参数对应Class的对象
-`public Method getMethod(String name, Class<?>... parameterTypes)`
+6. 通过无参实例化对象
+```java
+    Class<?> clazz  = Class.forName(类名全路径); //通过Class的静态方法          
+    class.newInstance();
+```
 
-# 获取类的成员变量（字段）信息
-getFiled: 访问公有的成员变量
+7. 获取字段，修改字段
+```java
+        Class<?> clazz  = Class.forName(类名全路径); //通过Class的静态方法
+        Field field = clazz.getField(String name);//获取公共字段
+        Field field = clazz.getDeclaredField(String name);//获取私有公共字段
+        Field[] field = clazz.getFields();//获取所有公共字段
+        Field[] field = clazz.getDeclaredFields();//获取包括私有所有字段
 
-getDeclaredField：所有已声明的成员变量。但不能得到其父类的成员变量
+        Field field = clazz.getDeclaredField("heihei");
+        field.setAccessible(true);//设置java取消访问检查，也就是说如果是私有的也可以访问,
+        field.set(obj, "Java反射机制");
+```
 
-getFileds和getDeclaredFields用法同上（参照Method）
+8. 获取方法,运行方法
+```java
+        Class<?> clazz  = Class.forName(类名全路径); //通过Class的静态方法          
+        clazz.getMethod(String name ,Class<?> ... parame);//获取公共指定方法
+        clazz.getDeclaredMethod(String name ,Class<?> ... parame)//获取私有指定方法
+        clazz.getMethods()//获取公共所有方法
+        clazz.getDeclaredMethods();//获取包括私有全部方法
 
+        Method method = clazz.getMethod("add");
+        method.invoke(clazz.newInstance());
+
+        method = clazz.getMethod("getInfo", int.class, String.class);
+        method.setAccessible(true)//设置java取消访问检查，也就是说如果是私有的也可以访问,
+        method.invoke(clazz.newInstance(), 20, "张三");
+```
+
+9. 获取数组或者list中的类型,如果不是数组或集合返回null
+```java
+    Class<?> clazz  = Class.forName(类名全路径); //通过Class的静态方法  
+    Class<?> componentType = clazz.getComponentType();
+```

@@ -1,0 +1,4 @@
+# Catch
+Retry操作符在发生错误的时候会重新进行订阅,而且可以重复多次，所以发射的数据可能会产生重复。如果重复指定次数还有错误的话就会将错误返回给观察者.
+
+Rxjava还实现了RetryWhen操作符。当错误发生时，retryWhen会接收onError的throwable作为参数，并根据定义好的函数返回一个Observable，如果这个Observable发射一个数据，就会重新订阅。
