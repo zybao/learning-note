@@ -22,7 +22,7 @@ SPI运用场景主要有：
 1. 定义接口 IService, 实现接口;
 2. 在工程的main目录下新建目录resources/META-INF/services，以服务接口名为文件名新建spi描述文件，内容为具体的服务实现类权限定名，可以有多个;
 3. 使用ServiceLoader去加载具体服务类，然后遍历具体的实现类，ServiceLoader其实就是去META-INFO/services目录下读取文件内容，然后实例化;
-```java
+``` java
     ServiceLoader<IService> loader = ServiceLoader.load(IService.class);
     Iterator<IService> iterator = loader.iterator();
     boolean isKeepLoc = false;
@@ -54,7 +54,7 @@ Java中使用ServiceLoader去读取SPI配置信息是在程序运行时，我们
 AutoService注解处理器是用来生成 `META-INF/services/javax.annotation.processing.Processor` 文件的，你只需要在你定义的注解处理器上添加 `@AutoService(Processor.class)` 就可以了.
 
 如果编译的时候出现DuplicateFileException，解决方法是在主项目build.gradle加上一段:
-```xml
+``` xml
 apply plugin: 'com.android.application'
 
 android {
@@ -85,7 +85,7 @@ buildscript {
 ```
 
 在主项目(app)的 build.gradle 中也添加两段语句：
-```xml
+``` xml
 apply plugin: 'com.android.application'
 apply plugin: 'com.neenbedankt.android-apt' // add
 // ...

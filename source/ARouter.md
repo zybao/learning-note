@@ -82,7 +82,8 @@ LogisticsCenter.class
             }
 
             if (ARouter.debuggable()) {
-                logger.debug(TAG, String.format(Locale.getDefault(), "LogisticsCenter has already been loaded, GroupIndex[%d], InterceptorIndex[%d], ProviderIndex[%d]", Warehouse.groupsIndex.size(), Warehouse.interceptorsIndex.size(), Warehouse.providersIndex.size()));
+                logger.debug(TAG, String.format(Locale.getDefault(), "LogisticsCenter has already been loaded, GroupIndex[%d], InterceptorIndex[%d], ProviderIndex[%d]", 
+                Warehouse.groupsIndex.size(), Warehouse.interceptorsIndex.size(), Warehouse.providersIndex.size()));
             }
         } catch (Exception e) {
             throw new HandlerException(TAG + "ARouter init logistics center exception! [" + e.getMessage() + "]");
