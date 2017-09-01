@@ -72,7 +72,7 @@ int layerID = canvas.saveLayer(0,0,width,height,mPaint,Canvas.ALL_SAVE_FLAG);
 canvas.restoreToCount(layerID); 
 ```
 
-### PorterDuffXfermode
+### [PorterDuffXfermode](https://developer.android.com/reference/android/graphics/PorterDuff.Mode.html)
 PorterDuff.Mode表示混合模式，枚举值有18个，表示各种图形混合模式, 有：
 ```java
 Mode.CLEAR;
