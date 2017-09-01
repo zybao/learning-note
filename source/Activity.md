@@ -172,3 +172,37 @@
 中间还有一系列过程，跟着源码走下去，不难发现，最后，是调用ApplicationThread的scheduleLaunchActivity来进行Activity的启动。
 
 * `Application.scheduleLaunchActivity`
+
+## ActivityManagerService
+
+```java
+    @Override
+    public final int startActivity(IApplicationThread caller, String callingPackage,
+            Intent intent, String resolvedType, IBinder resultTo, String resultWho, int requestCode,
+            int startFlags, ProfilerInfo profilerInfo, Bundle options) {
+        return startActivityAsUser(caller, callingPackage, intent, resolvedType, resultTo,
+            resultWho, requestCode, startFlags, profilerInfo, options,
+            UserHandle.getCallingUserId());
+    }
+
+    @Override
+    public final int startActivityAsUser(IApplicationThread caller, String callingPackage,
+            Intent intent, String resolvedType, IBinder resultTo, String resultWho, int requestCode,
+            int startFlags, ProfilerInfo profilerInfo, Bundle options, int userId) {
+        enforceNotIsolatedCaller("startActivity");
+        userId = handleIncomingUser(Binder.getCallingPid(), Binder.getCallingUid(), userId,
+                false, ALLOW_FULL_ONLY, "startActivity", null);
+        // TODO: Switch to user app stacks here.
+        return mStackSupervisor.startActivityMayWait(caller, -1, callingPackage, intent,
+                resolvedType, null, null, resultTo, resultWho, requestCode, startFlags,
+                profilerInfo, null, null, options, userId, null, null);
+    }
+```
+
+ActivityStackSupervisor.startActivityMayWait()
+ ->
+startActivityLocked()
+ ->
+startActivityUncheckedLocked()
+ ->
+ActivityStack.resumeTopActivitiesLocked()
