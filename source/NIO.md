@@ -78,3 +78,5 @@ Using a Buffer to read and write data typically follows this little 4-step proce
 4. Call buffer.clear() or buffer.compact()
 
 http://www.jianshu.com/p/052035037297?hmsr=toutiao.io&utm_medium=toutiao.io&utm_source=toutiao.io
+
+http://www.jianshu.com/p/5416b1f94993
