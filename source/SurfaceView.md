@@ -92,4 +92,11 @@ android系统View类的onDraw方法中已经实现了这第一层缓冲，这从
 
 第二层缓冲的主要作用是可以减少绘图工作对UI线程的阻塞，其利用的原理就是上面的操作（2）要快于操作（1）（因为操作（2）相当于就是简单的bitmap拷贝）。
 
-## SurfaceTexture，TextureView, SurfaceView 和 GLSurfaceView 区别
+## [SurfaceTexture，TextureView, SurfaceView 和 GLSurfaceView 区别](https://juejin.im/entry/58d3807b44d90400685c7e9e)
+* SurfaceView
+它继承自类View，因此它本质上是一个View。但与普通View不同的是，它有自己的Surface。我们知道，一般的Activity包含的多个View会组成View hierachy的树形结构，只有最顶层的DecorView，也就是根结点视图，才是对WMS可见的。这个DecorView在WMS中有一个对应的WindowState。相应地，在SF中对应的Layer。而SurfaceView自带一个Surface，这个Surface在WMS中有自己对应的WindowState，在SF中也会有自己的Layer。
+
+也就是说，虽然在App端它仍在View hierachy中，但在Server端（WMS和SF）中，它与宿主窗口是分离的。这样的好处是对这个Surface的渲染可以放到单独线程去做，渲染时可以有自己的GL context。这对于一些游戏、视频等性能相关的应用非常有益，因为它不会影响主线程对事件的响应。但它也有缺点，因为这个Surface不在View hierachy中，它的显示也不受View的属性控制，所以不能进行平移，缩放等变换，也不能放在其它ViewGroup中，一些View中的特性也无法使用。
+
+* GLSurfaceView
+作为SurfaceView的补充。它可以看作是SurfaceView的一种典型使用模式。在SurfaceView的基础上，它加入了EGL的管理，并自带了渲染线程。另外它定义了用户需要实现的Render接口，提供了用Strategy pattern更改具体Render行为的灵活性。作为GLSurfaceView的Client，只需要将实现了渲染函数的Renderer的实现类设置给GLSurfaceView即可。
