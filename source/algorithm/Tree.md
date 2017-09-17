@@ -185,5 +185,54 @@ class BinaryTreeTraversal {
             if(temp.right!=null)q.add(temp.right);  
         }  
     }  
+
+
+    /*
+     * 层序遍历
+     * 递归
+     */
+    public void levelOrder(BinaryNode<AnyType> Node) {
+        if (Node == null) {
+            return;
+        }
+
+        int depth = depth(Node);
+
+        for (int i = 1; i <= depth; i++) {
+            levelOrder(Node, i);
+        }
+    }
+
+    private void levelOrder(BinaryNode<AnyType> Node, int level) {
+        if (Node == null || level < 1) {
+            return;
+        }
+
+        if (level == 1) {
+            System.out.print(Node.element + "  ");
+            return;
+        }
+
+        // 左子树
+        levelOrder(Node.left, level - 1);
+
+        // 右子树
+        levelOrder(Node.right, level - 1);
+    }
+
+    public int depth(BinaryNode<AnyType> Node) {
+        if (Node == null) {
+            return 0;
+        }
+
+        int l = depth(Node.left);
+        int r = depth(Node.right);
+        if (l > r) {
+            return l + 1;
+        } else {
+            return r + 1;
+        }
+    }
+
 }  
 ```
