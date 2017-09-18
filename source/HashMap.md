@@ -1,0 +1,1 @@
+http://liujiacai.net/blog/2015/09/03/java-hashmap/#设计理念（design-concept）
