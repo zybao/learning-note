@@ -176,7 +176,7 @@ class BinaryTreeTraversal {
      */  
     public static void levelTravel(Node root){  
         if(root==null)return;  
-        Queue<Node> q=new LinkedList<Node>();  
+        Queue<Node> q = new LinkedList<Node>();  
         q.add(root);  
         while(!q.isEmpty()){  
             Node temp =  q.poll();  
