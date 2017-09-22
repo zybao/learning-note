@@ -70,3 +70,6 @@ ViewCacheExtension:
     检查历经上面步骤得到的ViewHolder**是否需要重新绑定数据(!holder.isBound() || holder.needsUpdate() || holder.isInvalid()), 如果需要，那么会调用Adapter的**bindViewHolder来绑定。
     之前说过，ViewHolder的存放位置被设定在了View的LayoutParam中，下面需要把View和其对应的ViewHolder关联起来,第一步是为View生成LayoutParam(如果没有或者不是指定类型的LayoutParam，有现成可用的就用现成的)，然后将ViewHolder保存在LayoutParam的mViewHolder中，而在这之前ViewHolder的itemView属性已经指向了得到的View，这样就实现了View和ViewHolder的双向关联, 代表着列表/表格/数据概念上的 “一项” 和 视图中的 “一项” 对应了起来。
         LayoutParam中除了维护一个mViewHolder外，还会维护mPendingInvalidate表示该View需要重绘,在被加入到RecyclerView后，会发起重绘请求(invalidate), 需要重绘的条件是: 该View是通过getScrapViewForPosition获取并且进行了数据绑定
+
+
+http://www.jianshu.com/p/9ddfdffee5d3
