@@ -10,13 +10,10 @@ public class FishingBoat {
 }
 
 public interface RowingBoat {
-
   void row();
-
 }
 
 public class FishingBoatAdapter implements RowingBoat {
-
   private FishingBoat boat;
 
   public FishingBoatAdapter() {
@@ -30,7 +27,6 @@ public class FishingBoatAdapter implements RowingBoat {
 }
 
 public class Captain implements RowingBoat {
-
   private RowingBoat rowingBoat;
 
   public Captain() {}
