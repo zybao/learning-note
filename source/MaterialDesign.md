@@ -17,3 +17,18 @@ snap: 视图在滚动时会有一种“就近原则”，怎么说呢，就是�
 app:layout_collapseMode="parallax"
 
 “pin”：固定模式，在折叠的时候最后固定在顶端；“parallax”：视差模式，在折叠的时候会有个视差折叠的效果
+
+# NavigationView
+# FloatingActionButton
+# TextInputLayout
+# Snackbar
+# TabLayout
+# AppBarLayout
+# CoordinatorLayout
+# CollapsingToolbarLayout
+# Coordinator.Behavior
+# CardView
+# Palette
+# Toolbar
+# DrawerLayout
+# SwipeRefreshLayout
