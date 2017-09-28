@@ -1,3 +1,5 @@
+学习难度：★★★★☆，使用频率：★☆☆☆☆
+
 What problems can the Flyweight design pattern solve? [2]
 * Large numbers of objects should be supported efficiently.
 * Creating large numbers of objects should be avoided.

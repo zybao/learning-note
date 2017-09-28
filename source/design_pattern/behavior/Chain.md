@@ -1,3 +1,5 @@
+学习难度：★★★☆☆，使用频率：★★☆☆☆
+
 ```java
 public enum RequestType {
   DEFEND_CASTLE, TORTURE_PRISONER, COLLECT_TAX

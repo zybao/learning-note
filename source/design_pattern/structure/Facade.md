@@ -1,3 +1,5 @@
+学习难度：★☆☆☆☆，使用频率：★★★★★
+
 A facade is an object that provides a simplified interface to a larger body of code, such as a class library. A facade can
 
 * make a software library easier to use, understand, and test, since the facade has convenient methods for common tasks,
