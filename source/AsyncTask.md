@@ -1,0 +1,3 @@
+http://www.jianshu.com/p/044b5aa5eb10
+
+AsyncTask允许我们执行后台操作并在UI线程中更新结果，而不用去操作threads或handlers。这句解释很明显的告诉了我们：AsyncTask是一个thread和handler的封装。

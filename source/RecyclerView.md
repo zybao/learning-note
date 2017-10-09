@@ -1,3 +1,4 @@
+
 # [Recycler](http://blog.csdn.net/fyfcauc/article/details/54342303)
 Recycler虽然命名上看，像是只承担了View回收的职责，其真正的定位是RecyclerView的View提供者(甚至是管理者), 包括生成新View, 复用旧View，回收View，重新绑定View等逻辑都被封装在Recycler中。外部调用者只需要调用Recycler的接口获取合适的View即可，不需要关心View获取和配置等具体细节，Recycler对外提供了View的回收和获取服务
 
@@ -73,3 +74,186 @@ ViewCacheExtension:
 
 
 http://www.jianshu.com/p/9ddfdffee5d3
+
+# [ItemDecoration](http://www.jianshu.com/p/5f6151c1b6f8)
+```java
+    public void addItemDecoration(ItemDecoration decor, int index) {
+        if (mLayout != null) {
+            mLayout.assertNotInLayoutOrScroll("Cannot add item decoration during a scroll  or"
+                    + " layout");
+        }
+        if (mItemDecorations.isEmpty()) {
+            setWillNotDraw(false);
+        }
+        if (index < 0) {
+            mItemDecorations.add(decor);
+        } else {
+            // 指定添加分割线在集合中的索引
+            mItemDecorations.add(index, decor);
+        }
+        markItemDecorInsetsDirty();
+        // 重新请求 View 的测量、布局、绘制
+        requestLayout();
+    }
+```
+
+mItemDecorations 是一个 ArrayList，我们将 ItemDecoration 也就是分割线对象，添加到其中。接着我们看下 markItemDecorInsetsDirty 这个方法做了些什么。
+```java
+    void markItemDecorInsetsDirty() {
+        final int childCount = mChildHelper.getUnfilteredChildCount();
+        for (int i = 0; i < childCount; i++) {
+            final View child = mChildHelper.getUnfilteredChildAt(i);
+            ((LayoutParams) child.getLayoutParams()).mInsetsDirty = true;
+        }
+        mRecycler.markItemDecorInsetsDirty();
+    }
+```
+这个方法首先遍历了 RecyclerView 和 LayoutManager 的所有子 View，将其子 View 的 LayoutParams 中的 mInsetsDirty 属性置为 true。接着调用了 mRecycler.markItemDecorInsetsDirty()，Recycler 是 RecyclerView 的一个内部类，就是它管理着 RecyclerView 的复用逻辑。
+```java
+    void markItemDecorInsetsDirty() {
+        final int cachedCount = mCachedViews.size();
+        for (int i = 0; i < cachedCount; i++) {
+            final ViewHolder holder = mCachedViews.get(i);
+            LayoutParams layoutParams = (LayoutParams) holder.itemView.getLayoutParams();
+            if (layoutParams != null) {
+                layoutParams.mInsetsDirty = true;
+            }
+        }
+    }
+```
+mCachedViews 见名知意，也就是 RecyclerView 缓存的集合，相信你也看到了，RecyclerView 的缓存单位是 ViewHolder。我们在 ViewHolder 中取出 itemView，然后获得 LayoutParams，将其 mInsetsDirty 字段一样置为 true。
+
+mInsetsDirty 字段的作用其实是一种优化性能的缓存策略，添加分割线对象时，无论是 RecyclerView 的子 view，还是缓存的 view，都将其置为 true，接着就调用了 requestLayout 方法。
+
+这里简单说一下 requestLayout 方法用一种责任链的方式，层层向上传递，最后传递到 ViewRootImpl，然后重新调用 view 的 measure、layout、draw 方法来展示布局。
+
+我们在 RecyclerView 中搜索 mItemDecorations 集合，看看他是在什么时刻操作 ItemDecoration 这个分割线对象的。
+```java
+    @Override
+    public void draw(Canvas c) {
+        super.draw(c);
+
+        final int count = mItemDecorations.size();
+        for (int i = 0; i < count; i++) {
+            mItemDecorations.get(i).onDrawOver(c, this, mState);
+        }
+        // TODO If padding is not 0 and clipChildrenToPadding is false, to draw glows properly, we
+        // need find children closest to edges. Not sure if it is worth the effort.
+        boolean needsInvalidate = false;
+        if (mLeftGlow != null && !mLeftGlow.isFinished()) {
+            final int restore = c.save();
+            final int padding = mClipToPadding ? getPaddingBottom() : 0;
+            c.rotate(270);
+            c.translate(-getHeight() + padding, 0);
+            needsInvalidate = mLeftGlow != null && mLeftGlow.draw(c);
+            c.restoreToCount(restore);
+        }
+        if (mTopGlow != null && !mTopGlow.isFinished()) {
+            final int restore = c.save();
+            if (mClipToPadding) {
+                c.translate(getPaddingLeft(), getPaddingTop());
+            }
+            needsInvalidate |= mTopGlow != null && mTopGlow.draw(c);
+            c.restoreToCount(restore);
+        }
+        if (mRightGlow != null && !mRightGlow.isFinished()) {
+            final int restore = c.save();
+            final int width = getWidth();
+            final int padding = mClipToPadding ? getPaddingTop() : 0;
+            c.rotate(90);
+            c.translate(-padding, -width);
+            needsInvalidate |= mRightGlow != null && mRightGlow.draw(c);
+            c.restoreToCount(restore);
+        }
+        if (mBottomGlow != null && !mBottomGlow.isFinished()) {
+            final int restore = c.save();
+            c.rotate(180);
+            if (mClipToPadding) {
+                c.translate(-getWidth() + getPaddingRight(), -getHeight() + getPaddingBottom());
+            } else {
+                c.translate(-getWidth(), -getHeight());
+            }
+            needsInvalidate |= mBottomGlow != null && mBottomGlow.draw(c);
+            c.restoreToCount(restore);
+        }
+
+        // If some views are animating, ItemDecorators are likely to move/change with them.
+        // Invalidate RecyclerView to re-draw decorators. This is still efficient because children's
+        // display lists are not invalidated.
+        if (!needsInvalidate && mItemAnimator != null && mItemDecorations.size() > 0 &&
+                mItemAnimator.isRunning()) {
+            needsInvalidate = true;
+        }
+
+        if (needsInvalidate) {
+            ViewCompat.postInvalidateOnAnimation(this);
+        }
+    }
+
+
+    @Override
+    public void onDraw(Canvas c) {
+        super.onDraw(c);
+
+        final int count = mItemDecorations.size();
+        for (int i = 0; i < count; i++) {
+            mItemDecorations.get(i).onDraw(c, this, mState);
+        }
+    }
+```
+可以看到在 View 的以上两个方法中，分别调用了 ItemDecoration 对象的 onDraw、onDrawOver 方法。
+
+这两个抽象方法，由我们继承 ItemDecoration 来自己实现，他们区别就是 onDraw 在 item view 绘制之前调用，onDrawOver 在 item view 绘制之后调用。
+
+所以绘制顺序就是 Decoration 的 onDraw，ItemView的 onDraw，Decoration 的 onDrawOver。
+
+# LayoutManager
+```java
+    public void setLayoutManager(LayoutManager layout) {
+        if (layout == mLayout) {
+            return;
+        }
+        // 停止滑动
+        stopScroll();
+        // TODO We should do this switch a dispatchLayout pass and animate children. There is a good
+        // chance that LayoutManagers will re-use views.
+        if (mLayout != null) {
+            // end all running animations
+            if (mItemAnimator != null) {
+                mItemAnimator.endAnimations();
+            }
+            // 移除并回收视图
+            mLayout.removeAndRecycleAllViews(mRecycler);
+            // 回收废弃视图
+            mLayout.removeAndRecycleScrapInt(mRecycler);
+            mRecycler.clear();
+
+            if (mIsAttached) {
+                mLayout.dispatchDetachedFromWindow(this, mRecycler);
+            }
+            mLayout.setRecyclerView(null);
+            mLayout = null;
+        } else {
+            mRecycler.clear();
+        }
+        // this is just a defensive measure for faulty item animators.
+        mChildHelper.removeAllViewsUnfiltered();
+        mLayout = layout;
+        if (layout != null) {
+            if (layout.mRecyclerView != null) {
+                throw new IllegalArgumentException("LayoutManager " + layout +
+                        " is already attached to a RecyclerView: " + layout.mRecyclerView);
+            }
+            mLayout.setRecyclerView(this);
+            if (mIsAttached) {
+                mLayout.dispatchAttachedToWindow(this);
+            }
+        }
+        mRecycler.updateViewCacheSize();
+        requestLayout();
+    }
+```
+这段代码主要做了一下几件事：
+当之前设置过 LayoutManager 时，移除之前的视图，并缓存视图在 Recycler 中，将新的 mLayout 对象与 RecyclerView 绑定，更新缓存 View 的数量。最后去调用 requestLayout ，重新请求 measure、layout、draw。
+
+# Recycler

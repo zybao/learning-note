@@ -66,3 +66,67 @@ interface NestedScrollingParent
 |dispatchNestedScroll | onNestedScroll|
 |stopNestedScroll | onStopNestedScroll|
 |...|...|
+
+```java
+    public boolean startNestedScroll(int axes) {
+        if (hasNestedScrollingParent()) {
+            // Already in progress
+            return true;
+        }
+        if (isNestedScrollingEnabled()) {
+            ViewParent p = mView.getParent();
+            View child = mView;
+            while (p != null) {
+                if (ViewParentCompat.onStartNestedScroll(p, child, mView, axes)) {
+                    mNestedScrollingParent = p;
+                    ViewParentCompat.onNestedScrollAccepted(p, child, mView, axes);
+                    return true;
+                }
+                if (p instanceof View) {
+                    child = (View) p;
+                }
+                p = p.getParent();
+            }
+        }
+        return false;
+    }
+```
+去寻找NestedScrollingParent，然后回调onStartNestedScroll和onNestedScrollAccepted。
+
+```java
+    public boolean dispatchNestedPreScroll(int dx, int dy, int[] consumed, int[] offsetInWindow) {
+        if (isNestedScrollingEnabled() && mNestedScrollingParent != null) {
+            if (dx != 0 || dy != 0) {
+                int startX = 0;
+                int startY = 0;
+                if (offsetInWindow != null) {
+                    mView.getLocationInWindow(offsetInWindow);
+                    startX = offsetInWindow[0];
+                    startY = offsetInWindow[1];
+                }
+
+                if (consumed == null) {
+                    if (mTempNestedScrollConsumed == null) {
+                        mTempNestedScrollConsumed = new int[2];
+                    }
+                    consumed = mTempNestedScrollConsumed;
+                }
+                consumed[0] = 0;
+                consumed[1] = 0;
+                ViewParentCompat.onNestedPreScroll(mNestedScrollingParent, mView, dx, dy, consumed);
+
+                if (offsetInWindow != null) {
+                    mView.getLocationInWindow(offsetInWindow);
+                    offsetInWindow[0] -= startX;
+                    offsetInWindow[1] -= startY;
+                }
+                return consumed[0] != 0 || consumed[1] != 0;
+            } else if (offsetInWindow != null) {
+                offsetInWindow[0] = 0;
+                offsetInWindow[1] = 0;
+            }
+        }
+        return false;
+    }
+```
+dispatchNestedPreScroll中会回调onNestedPreScroll方法，内部的scrollByInternal中还会回调onNestedScroll方法。
