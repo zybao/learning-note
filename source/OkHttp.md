@@ -1,3 +1,131 @@
+OkHttp是一个高效的Http客户端，有如下的特点：
+1. 支持[HTTP2/SPDY](https://leohxj.gitbooks.io/a-programmer-prepares/networks/a-simple-performance-comparison-of-https-spdy-and-http2.html)黑科技
+2. socket自动选择最好路线，并支持自动重连
+3. 拥有自动维护的socket连接池，减少握手次数
+4. 拥有队列线程池，轻松写并发
+5. 拥有Interceptors轻松处理请求与响应（比如透明GZIP压缩,LOGGING）
+6. 基于Headers的缓存策略
+
+# 主要对象
+* Connections: 对JDK中的物理socket进行了引用计数封装，用来控制socket连接
+* Streams: 维护HTTP的流，用来对Requset/Response进行IO操作
+* Calls: HTTP请求任务封装
+* StreamAllocation: 用来控制Connections/Streams的资源分配与释放
+
+
+**[使用说明](http://www.cnblogs.com/whoislcj/p/5526431.html)**
+
+```java
+  @Override public Call newCall(Request request) { // OkHttpClient
+    return RealCall.newRealCall(this, request, false /* for web socket */);
+  }
+
+  static RealCall newRealCall(OkHttpClient client, Request originalRequest, boolean forWebSocket) {
+    // Safely publish the Call instance to the EventListener.
+    RealCall call = new RealCall(client, originalRequest, forWebSocket);
+    call.eventListener = client.eventListenerFactory().create(call);
+    return call;
+  }
+
+  private RealCall(OkHttpClient client, Request originalRequest, boolean forWebSocket) {
+    this.client = client;
+    this.originalRequest = originalRequest;
+    this.forWebSocket = forWebSocket;
+    this.retryAndFollowUpInterceptor = new RetryAndFollowUpInterceptor(client, forWebSocket);
+  }
+
+  // 同步
+  @Override public Response execute() throws IOException {
+    synchronized (this) {
+      if (executed) throw new IllegalStateException("Already Executed");
+      executed = true;
+    }
+    captureCallStackTrace();
+    eventListener.callStart(this);
+    try {
+      client.dispatcher().executed(this);
+      Response result = getResponseWithInterceptorChain();
+      if (result == null) throw new IOException("Canceled");
+      return result;
+    } catch (IOException e) {
+      eventListener.callFailed(this, e);
+      throw e;
+    } finally {
+      client.dispatcher().finished(this);
+    }
+  }
+
+  // 异步
+  @Override public void enqueue(Callback responseCallback) {
+    synchronized (this) {
+      if (executed) throw new IllegalStateException("Already Executed");
+      executed = true;
+    }
+    captureCallStackTrace();
+    eventListener.callStart(this);
+    client.dispatcher().enqueue(new AsyncCall(responseCallback));
+  }
+```
+
+`Dispatcher.class`
+```java
+  synchronized void executed(RealCall call) {
+    runningSyncCalls.add(call);
+  }
+
+  synchronized void enqueue(AsyncCall call) {
+    if (runningAsyncCalls.size() < maxRequests && runningCallsForHost(call) < maxRequestsPerHost) {
+      runningAsyncCalls.add(call);
+      executorService().execute(call);
+    } else {
+      readyAsyncCalls.add(call);
+    }
+  }
+
+    /** Used by {@code AsyncCall#run} to signal completion. */
+  void finished(AsyncCall call) {
+    finished(runningAsyncCalls, call, true);
+  }
+
+  /** Used by {@code Call#execute} to signal completion. */
+  void finished(RealCall call) {
+    finished(runningSyncCalls, call, false);
+  }
+
+  private <T> void finished(Deque<T> calls, T call, boolean promoteCalls) {
+    int runningCallsCount;
+    Runnable idleCallback;
+    synchronized (this) {
+      if (!calls.remove(call)) throw new AssertionError("Call wasn't in-flight!");
+      if (promoteCalls) promoteCalls();
+      runningCallsCount = runningCallsCount();
+      idleCallback = this.idleCallback;
+    }
+
+    if (runningCallsCount == 0 && idleCallback != null) {
+      idleCallback.run();
+    }
+  }
+
+  private void promoteCalls() {
+    if (runningAsyncCalls.size() >= maxRequests) return; // Already running max capacity.
+    if (readyAsyncCalls.isEmpty()) return; // No ready calls to promote.
+
+    for (Iterator<AsyncCall> i = readyAsyncCalls.iterator(); i.hasNext(); ) {
+      AsyncCall call = i.next();
+
+      if (runningCallsForHost(call) < maxRequestsPerHost) {
+        i.remove();
+        runningAsyncCalls.add(call);
+        executorService().execute(call);
+      }
+
+      if (runningAsyncCalls.size() >= maxRequests) return; // Reached max capacity.
+    }
+  }
+```
+
+
 # Dispatcher
 * maxRequests = 64: 最大并发请求数为64
 * maxRequestsPerHost = 5: 每个主机最大请求数为5
