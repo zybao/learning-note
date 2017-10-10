@@ -1,3 +1,31 @@
+# View的生命周期方法
+* 创建
+    * 构造方法：通常每个控件都会有多个构造方法；如果在代码中创建该控件会用到包含一个Context的构造；如果需要布局中使用，则必须使用带有AttributeSet参数的构造。其它的还有带有主题的构造。
+    * onFinishInflate()：当一个View和它的所有子View从布局文件中inflate完成后调用。
+* 布局
+    * onMeasure(int,int):测量当前View 和它的子View的需要的尺寸大小
+    * onLayout(boolean,int,int,int,int):给当前View的所有的子View 分配尺寸大小和位置
+    * onSizeChanged(int,int,int,init):当前View的尺寸发生变化时调用
+* 绘制
+    * onDraw(Canvas):当View需要渲染内容时调用（将我们需要的内容画到view时调用）
+* 事件处理
+    * onKeyDown(int,KeyEvent):当前键盘（物理键）上某个键按下时调用
+    * onKeyUp(int,KeyEvent):当按下的键弹起时调用
+    * onTrackballEvent(MotionEvent):当轨迹球发生运动时调用
+    * onTouchEvent(MotionEvent):当触摸事件发生时调用
+* 焦点
+    * onFocusChanged(boolean,int,Rect):当焦点发生变化时调用（这里变化包括获取到焦点和失去焦点）
+    * onWindowFocusChanged(boolean):包含当前View的Window的焦点发生变化时调用（这里变化包括获取到焦点和失去焦点）
+* 附着
+    * onAttachedToWindow():当View附着到Window上时调用
+    * onDetachedFromWindow():当View从Window上分离时调用
+    * onWindowVisibilityChanged(int):包含当前View的Window的可见性发生改变时调用
+
+<div align=center>
+    <img src="images/view_lifecycle.jpg" width = "100%" alt="图片名称" align=center />
+</div>
+
+
 # [事件分发](http://www.gcssloop.com/customview/dispatch-touchevent-theory)
 
 事件分发可以用下面的伪代码表示：

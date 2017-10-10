@@ -1,3 +1,5 @@
+https://www.bbsmax.com/A/QV5Z4r96zy/
+
 # Launcher打开App过程：
 1. Launcher向ActivityManagerService发送一个启动MainActivity的请求;
 2. ActivityManagerService首先将MainActivity的相关信息保存下来，然后向Launcher发送一个使之进入中止状态的请求;
