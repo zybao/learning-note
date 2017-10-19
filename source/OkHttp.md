@@ -14,6 +14,14 @@ OkHttp是一个高效的Http客户端，有如下的特点：
 
 
 **[使用说明](http://www.cnblogs.com/whoislcj/p/5526431.html)**
+```
+RealCall: okHttpClient.newCall(Request) 
+->
+1) excute();
+2) enqueue();
+```
+
+
 
 ```java
   @Override public Call newCall(Request request) { // OkHttpClient
