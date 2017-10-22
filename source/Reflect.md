@@ -8,7 +8,7 @@
 
 2. 获取父类
 ```java
-    Class<?> clazz  = Class.forName(类名全路径); //通过Class的静态方法
+    Class<?> clazz  = Class.forN ame(类名全路径); //通过Class的静态方法
     Class<?> superclass = clazz.getSuperclass();
 ```
 3. 获取实现接口

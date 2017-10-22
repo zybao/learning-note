@@ -181,26 +181,6 @@
     public DrawableTypeRequest<String> load(String string) {
         return (DrawableTypeRequest<String>) fromString().load(string);
     }
-
-    public DrawableTypeRequest<String> load(String string) {
-        return (DrawableTypeRequest<String>) fromString().load(string);
-    }
-
-    public DrawableTypeRequest<String> load(String string) {
-        return (DrawableTypeRequest<String>) fromString().load(string);
-    }
-
-    public DrawableTypeRequest<String> load(String string) {
-        return (DrawableTypeRequest<String>) fromString().load(string);
-    }
-
-    public DrawableTypeRequest<String> load(String string) {
-        return (DrawableTypeRequest<String>) fromString().load(string);
-    }
-
-    public DrawableTypeRequest<String> load(String string) {
-        return (DrawableTypeRequest<String>) fromString().load(string);
-    }
 ```
 
 它们都调用了loadGeneric方法返回DrawableTypeRequest，然后调用DrawableTypeRequest的load()方法：
@@ -372,7 +352,7 @@ load方法继承自父类GenericRequestBuilder：
             logV("finished setup for calling load in " + LogTime.getElapsedMillis(startTime));
         }
         loadedFromMemoryCache = true;
-        loadStatus = engine.load(signature, width, height, dataFetcher, loadProvider, transformation, transcoder,
+        loadStatus = engine.loa  d(signature, width, height, dataFetcher, loadProvider, transformation, transcoder,
                 priority, isMemoryCacheable, diskCacheStrategy, this);
         loadedFromMemoryCache = resource != null;
         if (Log.isLoggable(TAG, Log.VERBOSE)) {

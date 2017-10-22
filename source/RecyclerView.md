@@ -5,7 +5,7 @@ Recycler虽然命名上看，像是只承担了View回收的职责，其真正�
 先列一些概念:
 
 1. View的detach和remove:
-* detach: 在ViewGroup中的实现很简单，只是将ChildView**从ParentView的ChildView数组中移除，ChildView的mParent设置为null, 可以理解为轻量级的临时remove, 因为View此时和View树还是藕断丝连, 这个函数被经常用来改变ChildView在ChildView数组中的次序。**View被detach一般是临时的，在后面会被重新attach。
+* detach: 在ViewGroup中的实现很简单，只是将ChildView**从ParentView的ChildView数组中移除，ChildView的mParent设置为null, 可以理解为轻量级的临时remove, 因为View此时和View树还是藕断丝连, 这个函数被经常用来改变ChildView在ChildView数组中的次序。** View被detach一般是临时的，在后面会被重新attach。
 * remove: 真正的移除，不光被从ChildView数组中除名，其他和View树各项联系也会被彻底斩断(不考虑Animation/LayoutTransition这种特殊情况)， 比如焦点被清除，从TouchTarget中被移除等。
 2. RecyclerView的Scrap View:
         Scrap View指的是在RecyclerView中，处于根据数据刷新界面等行为, ChildView被detach(注意这个detach指的是1中介绍的detach行为，而不是RecyclerView一部分注释中的”detach”，RecyclerView一部分注释中的”detach”其实指得是上面的remove)，并且被存储到了Recycler中，这部分ChildView就是Scrap View。
