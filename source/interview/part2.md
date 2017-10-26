@@ -857,3 +857,6 @@ P、G右旋并将P、G变相反色。因为P取代之前黑G的位置，所以P�
 - 一个具有n个内部结点的红黑树的高度h<=2lg(n+1)
 - 结点的属性(五元组):color key left right p
 - 动态集合操作最坏时间复杂度为O(lgn)
+
+
+https://blog.dreamtobe.cn/2016/03/09/oo_architecture/
