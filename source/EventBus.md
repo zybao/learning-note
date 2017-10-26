@@ -1,5 +1,9 @@
 https://juejin.im/entry/580f100a2f301e005c4ded79
 
+http://www.jianshu.com/p/b3486441d7df
+
+http://www.jianshu.com/p/b622334096fe
+
 # 构造器
 ```java
     public EventBus() {

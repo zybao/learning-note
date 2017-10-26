@@ -19,7 +19,7 @@ public enum WeaponType {
     return title;
   }
 }
-
+ 
 public interface Weapon {
 
   WeaponType getWeaponType();
