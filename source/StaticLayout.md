@@ -1,0 +1,1 @@
+https://jaeger.itscoder.com/android/2016/08/05/staticlayout-source-analyse.html

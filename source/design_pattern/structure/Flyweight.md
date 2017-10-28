@@ -1,4 +1,4 @@
-学习难度：★★★★☆，使用频率：★☆☆☆☆
+*亨元模式*: 学习难度：★★★★☆，使用频率：★☆☆☆☆
 
 What problems can the Flyweight design pattern solve? [2]
 * Large numbers of objects should be supported efficiently.

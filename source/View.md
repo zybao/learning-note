@@ -22,9 +22,10 @@
     * onWindowVisibilityChanged(int):包含当前View的Window的可见性发生改变时调用
 
 <div align=center>
-    <img src="images/view_lifecycle.jpg" width = "100%" alt="图片名称" align=center />
+    <img src="images/view_lifecycle.jpg" width = "160%" alt="图片名称" align=center />
 </div>
 
+http://www.jianshu.com/p/08e6dab7886e
 
 # [事件分发](http://www.gcssloop.com/customview/dispatch-touchevent-theory)
 
