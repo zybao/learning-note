@@ -57,7 +57,7 @@ public abstract class Window {
         }
 }
 
-public abstract void setContentView(@LayoutRes int layoutResID);
+public abst ract void setContentView(@LayoutRes int layoutResID);
 
 public abstract void setContentView(View view);
 ```
@@ -179,7 +179,7 @@ protected ViewGroup generateLayout(DecorView decor) {
 * Window是一个抽象类，提供了各种窗口操作的方法，比如设置背景标题ContentView等等
 * PhoneWindow则是Window的唯一实现类，它里面实现了各种添加背景主题ContentView的方法，内部通过DecorView来添加顶级视图
 * 每一个Activity上面都有一个Window，可以通过getWindow获取
-* DecorView，顶级视图，继承与FramentLayout，setContentView则是添加在它里面的@id/content里
+* DecorView，顶级视图，继承于FramentLayout，setContentView则是添加在它里面的@id/content里
 * setContentView里面创建了DecorView，根据Theme，Feature添加了对应的布局文件
 * 当setContentView设置显示后会回调Activity的onContentChanged方法
 
@@ -427,7 +427,7 @@ public void setView(View view, WindowManager.LayoutParams attrs, View panelParen
 }
 ```
 在setView方法中，
-首先会调用到requestLayout（），表示添加Window之前先完成第一次layout布局过程，以确保在收到任何系统事件后面重新布局。requestLayout最终会调用performTraversals方法来完成View的绘制。
+首先会调用到requestLayout()，表示添加Window之前先完成第一次layout布局过程，以确保在收到任何系统事件后面重新布局。requestLayout最终会调用performTraversals方法来完成View的绘制。
 
 接着会通过WindowSession最终来完成Window的添加过程。在下面的代码中mWindowSession类型是IWindowSession，它是一个Binder对象，真正的实现类是Session，也就是说这其实是一次IPC过程，远程调用了Session中的addToDisPlay方法。
 
@@ -804,7 +804,7 @@ just read the article here [link](http://www.jianshu.com/p/bac61386d9bf)
 
 （1）窗口类型必须是指定合法范围内的，即应用窗口，子窗口，系统窗口中的一种，否则检查会失败； 
 
-（2）如果是系统，需要进行权限检查 以下类型不需要特别声明权限 TYPE _ TOAST，TYPE _ DREAM，TYPE _ INPUT _ METHOD，TYPE _ WALLPAPER，TYPE _ PRIVATE _ PRESENTATION，TYPE _ VOICE _ INTERACTION，TYPE _ ACCESSIBILITY _ OVERLAY 以下类型需要声明使用权限：android.permission.SYSTEM _ ALERT _ WINDOW TYPE _ PHONE，TYPE _ PRIORITY _ PHONE，TYPE _ SYSTEM _ ALERT，TYPE _ SYSTEM _ ERROR，TYPE _ SYSTEM _ OVERLAY 其他的系统窗口，需要声明权限：android.permission.INTERNAL _ SYSTEM _ WINDOW 
+（2）如果是系统，需要进行权限检查 以下类型不需要特别声明权限 TYPE_TOAST，TYPE_DREAM，TYPE_INPUT_METHOD，TYPE_WALLPAPER，TYPE_PRIVATE_PRESENTATION，TYPE_VOICE_INTERACTION，TYPE_ACCESSIBILITY_OVERLAY 以下类型需要声明使用权限：android.permission.SYSTEM_ALERT_WINDOW TYPE_PHONE，TYPE_PRIORITY_PHONE，TYPE_SYSTEM_ALERT，TYPE_SYSTEM_ERROR，TYPE_SYSTEM_OVERLAY 其他的系统窗口，需要声明权限：android.permission.INTERNAL_SYSTEM_WINDOW 
 
 （3）如果是应用窗口，通过 token 检索出来的 WindowToken，一定不能为空，而且还必须是 Activity 的 mAppToken，同时对应的 Activity 还必须是没有被 finish。之前分析 Activity 的启动过程我们知道，Activity 在启动过程中，会先通过 WmS 的 addAppToken( )添加一个 AppWindowToken 到 mTokenMap 中，其中 key 就用了 IApplicationToken token。而 Activity 中的 mToken，以及 Activity 对应的 PhoneWindow 中的 mAppToken 就是来自 AmS 的 token (代码见 Activity 的 attach 方法)。 
 
@@ -897,7 +897,7 @@ android-23:
         }
     }
 ```
-其 WindowManager.LayoutParams 是通过 createPopupLayout(anchor.getWindowToken())来初始化的，其 type 类型是 WindowManager.LayoutParams.TYPE _ APPLICATION _ PANEL，属于子窗口类型。因此其 token 是取自外部传递的。无论是通过 showAsDropDown （ anchor.getWindowToken() ），还是通过 showAtLocation 始终都要给 PopupWindow 设置一个 token 的。
+其 WindowManager.LayoutParams 是通过 createPopupLayout(anchor.getWindowToken())来初始化的，其 type 类型是 WindowManager.LayoutParams.TYPE_APPLICATION_PANEL，属于子窗口类型。因此其 token 是取自外部传递的。无论是通过 showAsDropDown （ anchor.getWindowToken() ），还是通过 showAtLocation 始终都要给 PopupWindow 设置一个 token 的。
 ```java
     private WindowManager.LayoutParams createPopupLayoutParams(IBinder token) {
         final WindowManager.LayoutParams p = new WindowManager.LayoutParams();
@@ -980,10 +980,10 @@ ViewGroup.class
 
 # 系统窗口的创建
 系统窗口分4类： 
-* TYPE _ TOAST，不需要声明权限，也不需要 token; 
+* TYPE_TOAST，不需要声明权限，也不需要 token; 
 * 第二类，不需要声明权限，但是需要 token，而且对 token 有一定的要求； 
-* 第三类，需要 android.Manifest.permission.SYSTEM _ ALERT _ WINDOW 权限； 
-* 第四类，需要 android.Manifest.permission.INTERNAL _ SYSTEM _ WINDOW权限；
+* 第三类，需要 android.Manifest.permission.SYSTEM_ALERT_WINDOW 权限； 
+* 第四类，需要 android.Manifest.permission.INTERNAL_SYSTEM_WINDOW权限；
 
 
 # 这里我们总结一下，Android 中有关窗口的相关内容：
