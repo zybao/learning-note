@@ -756,7 +756,9 @@
 
     ActicityThread相关？
 
-    volatile的原理
+ *   volatile的原理
+    
+    http://www.cnblogs.com/chenssy/p/6379280.html
 
     synchronize的原理
 

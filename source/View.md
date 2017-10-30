@@ -21,6 +21,33 @@
     * onDetachedFromWindow():当View从Window上分离时调用
     * onWindowVisibilityChanged(int):包含当前View的Window的可见性发生改变时调用
 
+* xml visibility = gone (默认是visible)
+
+onVisibilityChanged -> 俩参数构造器 -> onFinishInflate -> onVisibilityChanged × 2
+-> onRtlPropertiesChanged × 2 -> onAttachedToWindow -> onWindowVisibilityChanged
+-> onWindowFocusChanged
+
+* xml visibility = invisible
+
+onVisibilityChanged -> 俩参数构造器 -> onFinishInflate -> onVisibilityChanged × 2
+-> onRtlPropertiesChanged × 2 -> onAttachedToWindow -> onWindowVisibilityChanged
+-> onMeasure × 2 -> onSizeChanged -> onLayout
+-> onMeasure  × 2 -> onLayout -> onWindowFocusChanged
+
+* xml visibility = visible
+
+俩参数构造器 -> onFinishInflate -> onVisibilityChanged × 2
+-> onRtlPropertiesChanged × 2 -> onAttachedToWindow -> onWindowVisibilityChanged
+-> onMeasure × 2 -> onSizeChanged -> onLayout
+-> onMeasure  × 2 -> onLayout -> onDraw -> onWindowFocusChanged
+
+* java setContentView(new MyView(this))
+
+单参数构造器  -> onVisibilityChanged × 2
+-> onRtlPropertiesChanged × 2 -> onAttachedToWindow -> onWindowVisibilityChanged
+-> onMeasure -> onSizeChanged -> onLayout
+-> onMeasure -> onLayout -> onDraw -> onWindowFocusChanged(在此之后指定LayoutParams)
+
 <div align=center>
     <img src="images/view_lifecycle.jpg" width = "160%" alt="图片名称" align=center />
 </div>
