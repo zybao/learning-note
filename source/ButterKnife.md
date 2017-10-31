@@ -248,3 +248,9 @@ process:
     return false;
   }
 ```
+
+# 总结
+1. ButterKnife使用上是通过注解来实现控件和响应事件的绑定，让代码的阅读性更高，书写更加方便；
+2. ButterKnife是通过在编译时候生成对应的className_ViewBinder类来辅助实现className类的控件和响应事件的绑定，所有绑定相关方法都在className_ViewBinder类里实现；
+3. ButterKnife是程序运行到ButterKnife.bind(this)的方法时候执行的，先通过反射获取对应的className_ViewBinder类，然后实现控件和响应事件的绑定；
+4. ButterKnife不能将控件和方法设置为private或者static，是因为在className_ViewBinder类会直接调用该控件和方法进行赋值。
