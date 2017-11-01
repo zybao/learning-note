@@ -341,7 +341,8 @@ OkHttp3的拦截器执行顺序依次是：自定义Interceptors(暂且称作A) 
   }
 ```
 
-### RetryAndFollowUpInterceptor
+### RetryAndFollowUpInterceptor 
+v3.9 RealInterceptorChain 添加了call字段
 ```java
   @Override public Response intercept(Chain chain) throws IOException {
     Request request = chain.request();
@@ -367,6 +368,7 @@ OkHttp3的拦截器执行顺序依次是：自定义Interceptors(暂且称作A) 
         releaseConnection = false;
       } catch (RouteException e) {
         // The attempt to connect via a route failed. The request will not have been sent.
+        // 通过路线连接失败，请求将不会再发送
         if (!recover(e.getLastConnectException(), false, request)) {
           throw e.getLastConnectException();
         }
@@ -374,12 +376,14 @@ OkHttp3的拦截器执行顺序依次是：自定义Interceptors(暂且称作A) 
         continue;
       } catch (IOException e) {
         // An attempt to communicate with a server failed. The request may have been sent.
+        // 与服务器尝试通信失败，请求不会再发送。
         boolean requestSendStarted = !(e instanceof ConnectionShutdownException);
         if (!recover(e, requestSendStarted, request)) throw e;
         releaseConnection = false;
         continue;
       } finally {
         // We're throwing an unchecked exception. Release any resources.
+        // 抛出未检查的异常，释放资源
         if (releaseConnection) {
           streamAllocation.streamFailed(null);
           streamAllocation.release();
@@ -387,6 +391,7 @@ OkHttp3的拦截器执行顺序依次是：自定义Interceptors(暂且称作A) 
       }
 
       // Attach the prior response if it exists. Such responses never have a body.
+      // 附加上先前存在的response。这样的response从来没有body
       if (priorResponse != null) {
         response = response.newBuilder()
             .priorResponse(priorResponse.newBuilder()
@@ -791,3 +796,28 @@ OkHttp3要求每个连接都需要指明一个Router路由对象，当然这个R
 * HttpStream： 这是一个抽象类，其子类实现了各类网络协议流格式。 HttpStream在OkHttp3中有两个实现类Http1xStream和Http2xStream，Http1xStream实现了HTTP/1.1协议流，Http2xStream则实现了HTTP/2和SPDY协议流。
 
 * ConnectionPool：OkHttp连接池，由OkHttpClient持有该对象，ConnectionPool持有一个0核心线程数的线程池(与Executors.newCachedThreadPool()提供的线程池行为完全一样)用于清理一些超时的RealConnection连接对象，持有一个Deque对象缓存OkHttp3的RealConnection连接对象。
+
+# StreamAllocation
+StreamAllocation 是在RetryAndFollowUpInterceptor这个拦截器中创建的，并以此通过责任链传递给下一个拦截器
+而它的使用则是在ConnectionInterceptor拦截器中去与服务器建立连接。
+
+更详细的说：建立TCP连接，处理SSL/TLS握手，完成HTTP2协商等过程在 ConnectInterceptor 中完成，具体是在StreamAllocation.newStream()。
+而向网络写数据，是在CallServerInterceptor中。
+
+
+* Address：描述某一个特定的服务器地址。
+* Route：表示连接的线路
+* ConnectionPool：连接池，所有连接的请求都保存在这里，内部由线程池维护
+* RouteSelector：线路选择器，用来选择线路和自动重连
+* RealConnection：用来连接到Socket链路
+* HttpStream：则是Http流，它是一个接口，实现类是Http1xStream、Http2xStream。分别对应HTTP/1.1、HTTP/2和SPDY协议
+
+# OkHttp的文件系统
+OkHttp中的关键对象如下：
+* FileSystem: 使用Okio对File的封装，简化了IO操作
+* DiskLruCache.Editor: 添加了同步锁，并对FileSystem进行高度封装
+* DiskLruCache.Entry: 维护着key对应的多个文件
+* Cache.Entry: Responsejava对象与Okio流的序列化/反序列化类
+* DiskLruCache: 维护着文件的创建，清理，读取。内部有清理线程池，LinkedHashMap(也就是LruCache)
+* Cache: 被上级代码调用，提供透明的put/get操作，封装了缓存检查条件与DiskLruCache，开发者只用配置大小即可，不需要手动管理
+* Response/Requset: OkHttp的请求与回应
