@@ -812,3 +812,12 @@ StreamAllocation 是在RetryAndFollowUpInterceptor这个拦截器中创建的，
 * RealConnection：用来连接到Socket链路
 * HttpStream：则是Http流，它是一个接口，实现类是Http1xStream、Http2xStream。分别对应HTTP/1.1、HTTP/2和SPDY协议
 
+# OkHttp的文件系统
+OkHttp中的关键对象如下：
+* FileSystem: 使用Okio对File的封装，简化了IO操作
+* DiskLruCache.Editor: 添加了同步锁，并对FileSystem进行高度封装
+* DiskLruCache.Entry: 维护着key对应的多个文件
+* Cache.Entry: Responsejava对象与Okio流的序列化/反序列化类
+* DiskLruCache: 维护着文件的创建，清理，读取。内部有清理线程池，LinkedHashMap(也就是LruCache)
+* Cache: 被上级代码调用，提供透明的put/get操作，封装了缓存检查条件与DiskLruCache，开发者只用配置大小即可，不需要手动管理
+* Response/Requset: OkHttp的请求与回应
