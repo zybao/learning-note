@@ -12,11 +12,11 @@ http://www.jianshu.com/p/b622334096fe
 
     EventBus(EventBusBuilder builder) {
         // 以事件类的class对象为键值，记录注册方法信息，值为一个Subscription的列表
-        subscriptionsByEventType = new HashMap<>();
+        subscriptionsByEventType = new HashMap<Class<?>, CopyOnWriteArrayList<Subscription>>();
         // 以注册的类为键值，记录该类所注册的所有事件类型，值为一个Event的class对象的列表
-        typesBySubscriber = new HashMap<>();
+        typesBySubscriber = new HashMap<Object, List<Class<?>>>();
         // 记录sticky事件
-        stickyEvents = new ConcurrentHashMap<>();
+        stickyEvents = new ConcurrentHashMap<Class<?>, Object>();
         // 三个Poster, 负责在不同的线程中调用订阅者的方法
         mainThreadPoster = new HandlerPoster(this, Looper.getMainLooper(), 10);
         backgroundPoster = new BackgroundPoster(this);
