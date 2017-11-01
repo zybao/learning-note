@@ -1,3 +1,7 @@
+http://www.jianshu.com/p/89f19d67b348
+
+http://www.jianshu.com/p/f0d2ed1254a9
+
 # 阿里巴巴
 
     LRUCache原理
@@ -630,7 +634,22 @@
 
     Activity生命周期
 
-    AlertDialog,popupWindow,Activity区别
+* AlertDialog,popupWindow,Activity区别
+
+Activity像一个工匠（控制单元），Window像窗户（承载模型），View像窗花（显示视图） LayoutInflater像剪刀，Xml配置像窗花图纸。
+
+在Activity中调用attach，创建了一个Window
+创建的window是其子类PhoneWindow，在attach中创建PhoneWindow
+在Activity中调用setContentView(R.layout.xxx)
+其中实际上是调用的getWindow().setContentView()
+调用PhoneWindow中的setContentView方法
+创建ParentView：  作为ViewGroup的子类，实际是创建的DecorView(作为FramLayout的子类）
+将指定的R.layout.xxx进行填充 通过布局填充器进行填充【其中的parent指的就是DecorView】
+调用到ViewGroup
+调用ViewGroup的removeAllView()，先将所有的view移除掉
+添加新的view：addView()
+
+
 
 小米
 

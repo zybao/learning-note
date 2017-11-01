@@ -1,4 +1,5 @@
 参考 http://www.jianshu.com/p/bac61386d9bf
+
 http://dev.qq.com/topic/5923ef85bdc9739041a4a798
 
 Window是一个窗口的概念，是一个抽象类，具体实现是PhoneWindow。
