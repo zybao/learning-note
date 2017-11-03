@@ -743,7 +743,9 @@ Activity像一个工匠（控制单元），Window像窗户（承载模型），
 
     内存泄漏的可能原因？
 
-    用IDE如何分析内存泄漏？
+* 用IDE如何分析内存泄漏？
+
+    http://www.jianshu.com/p/216b03c22bb8
 
     OOM的可能原因？
 
@@ -881,3 +883,7 @@ P、G右旋并将P、G变相反色。因为P取代之前黑G的位置，所以P�
 
 
 https://blog.dreamtobe.cn/2016/03/09/oo_architecture/
+
+http://www.iigrowing.cn/android-shi-jian-de-chu-li-mo-xing-he-duo-xian-cheng-chu-li.html
+
+http://www.cnblogs.com/fly-fish/p/4942066.html
