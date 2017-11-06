@@ -394,7 +394,7 @@ ServiveMethod.class
 ```
 
 # BuiltInConverters
-BuiltInConverters 中有好几种内置的 Converter 。并且只支持返回 ResponseBody 。我们来看下它们的实现：
+BuiltInConverters 中有好几种内置的 Converter 。并且只支持返回 ResponseBody。我们来看下它们的实现：
 ```java
   static final class StreamingResponseBodyConverter
         implements Converter<ResponseBody, ResponseBody> {
