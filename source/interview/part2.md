@@ -292,27 +292,27 @@ Android v4 兼容包提供android.support.v4.content.LocalBroadcastManager工具
 
 #    Bundle 机制
 
-    Handler 机制
+#    Handler 机制
 
-    android 事件传递机制
+#    android 事件传递机制
 
-    线程间 操作 List
+#    线程间 操作 List
 
-    App启动流程，从点击桌面开始
+#    App启动流程，从点击桌面开始
 
-    动态加载
+#    动态加载
 
-    类加载器
+#    类加载器
 
-    OSGI http://blog.csdn.net/xiaokui008/article/details/9662933
+#    OSGI http://blog.csdn.net/xiaokui008/article/details/9662933
 
-*    Https请求慢的解决办法，DNS，携带数据，直接访问IP
+#    Https请求慢的解决办法，DNS，携带数据，直接访问IP
 
-*    GC回收策略
+#    GC回收策略
 
-*    画出 Android 的大体架构图
+#    画出 Android 的大体架构图
 
-* 描述清点击 Android Studio 的 build 按钮后发生了什么
+# 描述清点击 Android Studio 的 build 按钮后发生了什么
 
     https://www.zhihu.com/question/65289196/answer/229998562
 
@@ -340,9 +340,9 @@ Android v4 兼容包提供android.support.v4.content.LocalBroadcastManager工具
     * Apk Install &  LaunchActivity 
 
 
-* 大体说清一个应用程序安装到手机上时发生了什么；
+# 大体说清一个应用程序安装到手机上时发生了什么；
 
-* [对 Dalvik、ART 虚拟机有基本的了解](http://www.jianshu.com/p/58f817d176b7)；
+# [对 Dalvik、ART 虚拟机有基本的了解](http://www.jianshu.com/p/58f817d176b7)；
 
     * Dalvik和JVM有啥关系？
     
@@ -393,31 +393,31 @@ Android v4 兼容包提供android.support.v4.content.LocalBroadcastManager工具
 
 
 
-*    Android 上的 Inter-Process-Communication 跨进程通信时如何工作的；
+#    Android 上的 Inter-Process-Communication 跨进程通信时如何工作的；
 
     http://www.jianshu.com/p/b9b3051a4ff6
 
-* App 是如何沙箱化，为什么要这么做； 
+# App 是如何沙箱化，为什么要这么做； 
     
     http://blog.csdn.net/ljheee/article/details/53191397
 
     http://blog.csdn.net/jiangwei0910410003/article/details/51316688
 
-* 权限管理系统（底层的权限是如何进行 grant 的）
+# 权限管理系统（底层的权限是如何进行 grant 的）
 
     http://www.cnblogs.com/bugly/p/7344275.html
 
     http://blog.csdn.net/liuzhicsdn/article/details/61614632
 
-* 进程和 Application 的生命周期；
+# 进程和 Application 的生命周期；
 
-* 系统启动流程 Zygote进程 –> SystemServer进程 –> 各种系统服务 –> 应用进程
+# 系统启动流程 Zygote进程 –> SystemServer进程 –> 各种系统服务 –> 应用进程
 
-* recycleview listview 的区别,性能
+# recycleview listview 的区别,性能
 
-* 排序，快速排序的实现
+# 排序，快速排序的实现
 
-* 树：B+树的介绍
+# 树：B+树的介绍
 
     由于B-Tree的特性，在B-Tree中按key检索数据的算法非常直观：首先从根节点进行二分查找，如果找到则返回对应节点的data，否则对相应区间的指针指向的节点递归进行查找，直到找到节点或找到null指针，前者查找成功，后者查找失败。
 
@@ -461,19 +461,19 @@ Android v4 兼容包提供android.support.v4.content.LocalBroadcastManager工具
 
     由于B+Tree内节点去掉了data域，因此可以拥有更大的出度，拥有更好的性能。
 
-* 图：有向无环图的解释
+# 图：有向无环图的解释
 
-* [TCP/UDP的区别](http://blog.csdn.net/li_ning_/article/details/52117463)
+# [TCP/UDP的区别](http://blog.csdn.net/li_ning_/article/details/52117463)
 
-* synchronized与Lock的区别
+# synchronized与Lock的区别
 
     http://blog.csdn.net/u012403290/article/details/64910926?locationNum=11&fps=1
 
-* volatile
+# volatile
 
-* Java线程池
+# Java线程池
 
-* Java中对象的生命周期
+# Java中对象的生命周期
 在Java中，对象的生命周期包括以下几个阶段：
 
 1.      创建阶段(Created)
@@ -522,25 +522,25 @@ Android v4 兼容包提供android.support.v4.content.LocalBroadcastManager工具
     垃圾回收器对该对象的所占用的内存空间进行回收或者再分配了，则该对象彻底消失了，称之为“对象空间重新分配阶段”。
 
 
-*    类加载机制
+#    类加载机制
 
-*    双亲委派模型
+#    双亲委派模型
 
-*    Android事件分发机制
+#    Android事件分发机制
 
-    MVP模式
+#    MVP模式
 
-    RxJava
+#    RxJava
 
-    抽象类和接口的区别
+#    抽象类和接口的区别
 
-    集合 Set实现 Hash 怎么防止碰撞
+#    集合 Set实现 Hash 怎么防止碰撞
 
-    JVM 内存区域 开线程影响哪块内存
+#    JVM 内存区域 开线程影响哪块内存
 
-*    垃圾收集机制 对象创建，新生代与老年代
+#    垃圾收集机制 对象创建，新生代与老年代
 
-*    二叉树 深度遍历与广度遍历
+#    二叉树 深度遍历与广度遍历
 
 * B树、B+树
 
