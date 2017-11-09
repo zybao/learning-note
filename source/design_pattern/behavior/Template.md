@@ -1,6 +1,6 @@
 模板方法: 学习难度：★★☆☆☆，使用频率：★★★☆☆
 
-定义父类方法，子类继承并调用父类方法
+定义父类方法，子类继承并调用父类方法，应用：BaseActivity
 
 ```java
 public abstract class StealingMethod {
