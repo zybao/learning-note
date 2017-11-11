@@ -656,7 +656,7 @@ Android v4 兼容包提供android.support.v4.content.LocalBroadcastManager工具
 
     图片加载库相关，bitmap如何处理大图，如一张30M的大图，如何预防OOM
 
-*    进程保活
+#    进程保活
 
     http://www.jianshu.com/p/1da4541b70ad
 
