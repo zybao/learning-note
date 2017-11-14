@@ -354,3 +354,114 @@ startService这里，主要便是提取原本目标service信息，然后转化�
         return intent;
     }
 ```
+
+# 资源加载
+
+https://www.zybuluo.com/dodola/note/814116
+
+在VirtualAPK里插件所有相关的内容都被封装到 LoadedPlugin 里，插件的加载行为一般都在这个类的构造方法的实现里,我们这里只关注与资源相关部分的代码
+
+```java
+    LoadedPlugin(PluginManager pluginManager, Context context, File apk) throws PackageParser.PackageParserException {
+        //需要注意context是宿主的Context
+        //apk 指的是插件的路径
+        this.mResources = createResources(context, apk);
+        this.mAssets = this.mResources.getAssets();
+    }
+        private static AssetManager createAssetManager(Context context, File apk) {
+            try {
+                //这里参照系统的方式生成AssetManager，并通过反射将插件的apk路径添加到AssetManager里
+                //这里只适用于资源独立的情况，如果需要调用宿主资源，则需要插入到宿主的AssetManager里
+                AssetManager am = AssetManager.class.newInstance();
+                ReflectUtil.invoke(AssetManager.class, am, "addAssetPath", apk.getAbsolutePath());
+                return am;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+        @WorkerThread
+        private static Resources createResources(Context context, File apk) {
+            if (Constants.COMBINE_RESOURCES) {
+                //如果插件资源合并到宿主里面去的情况，插件可以访问宿主的资源
+                Resources resources = new ResourcesManager().createResources(context, apk.getAbsolutePath());
+                ResourcesManager.hookResources(context, resources);
+                return resources;
+            } else {
+                //插件使用独立的Resources，不与宿主有关系，无法访问到宿主的资源
+                Resources hostResources = context.getResources();
+                AssetManager assetManager = createAssetManager(context, apk);
+                return new Resources(assetManager, hostResources.getDisplayMetrics(), hostResources.getConfiguration());
+            }
+        }
+```
+
+如果将宿主和插件隔离，我们只需要生成一个独立的 Resources 对象给插件使用，如果要调用宿主资源则需要将宿主的APK和插件的APK一起添加到同一个 AssetManager 里。进入到 ResourcesManager 的逻辑里
+
+ResourcesManager.java
+```java
+public static synchronized Resources createResources(Context hostContext, String apk) {
+        // hostContext 为宿主的Context
+        Resources hostResources = hostContext.getResources();
+        //获取到宿主的Resources对象
+        Resources newResources = null;
+        AssetManager assetManager;
+        try {
+            //-----begin---
+            //这块的代码涉及到的内容比较多，详情见①
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                assetManager = AssetManager.class.newInstance();
+                ReflectUtil.invoke(AssetManager.class, assetManager, "addAssetPath", hostContext.getApplicationInfo().sourceDir);
+            } else {
+                assetManager = hostResources.getAssets();
+            }
+            //------end----
+            //------begin---
+            ReflectUtil.invoke(AssetManager.class, assetManager, "addAssetPath", apk);
+            List<LoadedPlugin> pluginList = PluginManager.getInstance(hostContext).getAllLoadedPlugins();
+            for (LoadedPlugin plugin : pluginList) {
+                ReflectUtil.invoke(AssetManager.class, assetManager, "addAssetPath", plugin.getLocation());
+            }
+            //------end----
+            //-----begin-----
+            //此处针对机型的兼容代码是可以避开的，详情见③
+            if (isMiUi(hostResources)) {
+                newResources = MiUiResourcesCompat.createResources(hostResources, assetManager);
+            } else if (isVivo(hostResources)) {
+                newResources = VivoResourcesCompat.createResources(hostContext, hostResources, assetManager);
+            } else if (isNubia(hostResources)) {
+                newResources = NubiaResourcesCompat.createResources(hostResources, assetManager);
+            } else if (isNotRawResources(hostResources)) {
+                newResources = AdaptationResourcesCompat.createResources(hostResources, assetManager);
+            } else {
+                // is raw android resources
+                newResources = new Resources(assetManager, hostResources.getDisplayMetrics(), hostResources.getConfiguration());
+            }
+            //-----end-----
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return newResources;
+    }
+    public static void hookResources(Context base, Resources resources) {
+        if (Build.VERSION.SDK_INT >= 24) {
+            return;
+        }
+        try {
+            ReflectUtil.setField(base.getClass(), base, "mResources", resources);
+            Object loadedApk = ReflectUtil.getPackageInfo(base);
+            ReflectUtil.setField(loadedApk.getClass(), loadedApk, "mResources", resources);
+            Object activityThread = ReflectUtil.getActivityThread(base);
+            Object resManager = ReflectUtil.getField(activityThread.getClass(), activityThread, "mResourcesManager");
+            Map<Object, WeakReference<Resources>> map = (Map<Object, WeakReference<Resources>>) ReflectUtil.getField(resManager.getClass(), resManager, "mActiveResources");
+            Object key = map.keySet().iterator().next();
+            map.put(key, new WeakReference<>(resources));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+①：此处针对系统版本的区分涉及到资源加载时候的兼容性问题
+
+由于资源做过分区，则在Android L后直接将插件包的apk地址 addAssetPath 之后就可以，但是在Android L之前，addAssetPath` 只是把补丁包加入到资源路径列表里，但是资源的解析其实是在很早的时候就已经执行完了，问题出现在这部分代码：
