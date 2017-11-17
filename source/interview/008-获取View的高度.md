@@ -49,7 +49,7 @@ view.measure(width, height); view.getMeasuredWidth(); // 获取宽度
 view.getMeasuredHeight(); // 获取高度
 ```
 
-## ViewTreeObserver. OnPreDrawListener
+## ViewTreeObserver.OnPreDrawListener
 在视图将要绘制时调用该监听事件，会被调用多次，因此获取到视图的宽度和高度后要移除该监听事件
 ```java
 view.getViewTreeObserver().addOnPreDrawListener( 

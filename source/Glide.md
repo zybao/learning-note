@@ -174,7 +174,7 @@
         return glide;
     }
 ```
-先创建了GlideBuilder,然后调用其createGlide创建glide,GlideBuilder为Glide设置一些默认配置，而且可以通过GlideModule进行一些延迟的配置和ModelLoaders的注册。
+先创建了GlideBuilder,然后调用其createGlide创建glide, GlideBuilder为Glide设置一些默认配置，而且可以通过GlideModule进行一些延迟的配置和ModelLoaders的注册。
 
 ## Glide.with().load()
 ```java

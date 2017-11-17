@@ -32,13 +32,11 @@ http://www.jianshu.com/p/f0d2ed1254a9
 
     怎么去除重复代码
 
-    SP是进程同步的吗?有什么方法做到同步
+#    SP是进程同步的吗?有什么方法做到同步
 
-    介绍下SurfView
+#    介绍下SurfView
 
-    HashMap实现原理，ConcurrentHashMap 的实现原理
-
-
+#    HashMap实现原理，ConcurrentHashMap 的实现原理
 
 #    Bundle 机制
 
@@ -590,7 +588,7 @@ http://www.jianshu.com/p/f0d2ed1254a9
 
     Glide 内存缓存如何控制大小？
 
-* 如何保证多线程读写文件的安全？
+# 如何保证多线程读写文件的安全？
 
     http://blog.csdn.net/rlanffy/article/details/26622521
 
