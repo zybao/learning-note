@@ -474,68 +474,92 @@ http://www.jianshu.com/p/f0d2ed1254a9
     Activity的启动模式
 
 爱奇艺
+====================
 
-    RxJava的功能与原理实现
+#    RxJava的功能与原理实现
 
-    RecycleView的使用，原理，RecycleView优化
+#    RecycleView的使用，原理，RecycleView优化
 
-    ANR的原因
+#    ANR的原因
 
-    四大组件
+#    四大组件
 
-    Service的开启方式
+#    Service的开启方式
 
-    Activity与Service通信的方式
+#    Activity与Service通信的方式
 
-    Activity之间的通信方式
+#    Activity之间的通信方式
 
-    HashMap的实现，与HashSet的区别
+    Intent
+    借助类的静态变量
+    借助全局变量/Application
+    借助外部工具
+    – 借助SharedPreference
+    – 使用Android数据库SQLite
+    – 赤裸裸的使用File
+    – Android剪切板
+    借助Service
 
-    JVM内存模型，内存区域
 
-    Java中同步使用的关键字，死锁
+#    HashMap的实现，与HashSet的区别
 
-    MVP模式
+#    JVM内存模型，内存区域
 
-    Java设计模式，观察者模式
+#    Java中同步使用的关键字，死锁
 
-    Activity与Fragment之间生命周期比较
+#    MVP模式
 
-    广播的使用场景
+#    Java设计模式，观察者模式
 
- 百度
+#    Activity与Fragment之间生命周期比较
 
-    Bitmap 使用时候注意什么？
+#    广播的使用场景
 
-    Oom 是否可以try catch ？
+# 百度
 
-    内存泄露如何产生？
+#    Bitmap 使用时候注意什么？
 
-    适配器模式，装饰者模式，外观模式的异同？
+#    Oom 是否可以try catch ？
 
-    ANR 如何产生？
+It's not an exception; it's an error: java.lang.OutOfMemoryError
 
-    String buffer 与string builder 的区别？
+You can catch it as it descends from Throwable:
+```java
+try {
+    // create lots of objects here and stash them somewhere
+} catch (OutOfMemoryError E) {
+    // release some (all) of the above objects
+}
+```
+However, unless you're doing some rather specific stuff (allocating tons of things within a specific code section, for example) you likely won't be able to catch it as you won't know where it's going to be thrown from.
 
-    如何保证线程安全？
+#    内存泄露如何产生？
 
-    java四中引用
+#    适配器模式，装饰者模式，外观模式的异同？
 
-    Jni 用过么？
+#    ANR 如何产生？
 
-    多进程场景遇见过么？
+#    String buffer 与string builder 的区别？
 
-    关于handler，在任何地方new handler 都是什么线程下
+#    如何保证线程安全？
 
-    sqlite升级，增加字段的语句
+#    java四中引用
 
-    bitmap recycler 相关
+#    Jni 用过么？
 
-    强引用置为null，会不会被回收？
+#    多进程场景遇见过么？
 
-    glide 使用什么缓存？
+#    关于handler，在任何地方new handler 都是什么线程下
 
-    Glide 内存缓存如何控制大小？
+#    sqlite升级，增加字段的语句
+
+#    bitmap recycler 相关
+
+#    强引用置为null，会不会被回收？
+
+#    glide 使用什么缓存？
+
+#    Glide 内存缓存如何控制大小？
 
 # 如何保证多线程读写文件的安全？
 
