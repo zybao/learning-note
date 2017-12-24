@@ -1,0 +1,1 @@
+https://tech.meituan.com/android-apk-v2-signature-scheme.html
