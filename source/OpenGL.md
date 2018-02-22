@@ -20,7 +20,7 @@ public void onSurfaceCreated(GL10 gl, EGLConfig config)
 public void onDrawFrame(GL10 gl)
 
 // Called when the surface changed size.
-public void onSurfaceChanged(GL10 gl, int width, int height)  
+public void onSurfacn eChanged(GL10 gl, int width, int height)  
 ```
 * onSurfaceCreated：在这个方法中主要用来设置一些绘制时不常变化的参数，比如：背景色，是否打开 z-buffer等。
 * onDrawFrame：定义实际的绘图操作。
