@@ -1,3 +1,6 @@
+http://hao.jobbole.com/disklrucache/
+
+
 copied from glide
 ```java
 public class LruCache<T, Y> {

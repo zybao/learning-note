@@ -467,3 +467,107 @@ sendMessageAtFrontOfQueue(Message msg); //最先处理消息（慎用）
     }
 ```
 注意：doInBackground方法是在子线程中，所以，我们在这个方法里面执行耗时操作。同时，由于其返回结果会传递到onPostExecute方法中，而onPostExecute方法工作在UI线程，这样我们就在这个方法里面更新ui，达到了异步更新ui的目的。
+
+# `invalidate()` 与 `requestLayout()`的区别
+
+https://juejin.im/entry/59e46ce16fb9a04511702dd0
+
+```java
+/**
+* Invalidate the whole view. If the view is visible,
+* {@link #onDraw(android.graphics.Canvas)} will be called at some point in
+* the future.
+* <p>
+* This must be called from a UI thread. To call from a non-UI thread, call
+* {@link #postInvalidate()}.
+*/
+```
+
+```java
+void invalidateInternal(int l, int t, int r, int b, boolean invalidateCache,
+            boolean fullInvalidate) {
+        if (mGhostView != null) {
+            mGhostView.invalidate(true);
+            return;
+        }
+      //这里判断该子View是否可见或者是否处于动画中
+        if (skipInvalidate()) {
+            return;
+        }
+         //根据View的标记位来判断该子View是否需要重绘，假如View没有任何变化，那么就不需要重绘,这里很重要一定要注意，通过标志位来决定是否需要重新绘制
+        if ((mPrivateFlags & (PFLAG_DRAWN | PFLAG_HAS_BOUNDS)) == (PFLAG_DRAWN | PFLAG_HAS_BOUNDS)
+                || (invalidateCache && (mPrivateFlags & PFLAG_DRAWING_CACHE_VALID) == PFLAG_DRAWING_CACHE_VALID)
+                || (mPrivateFlags & PFLAG_INVALIDATED) != PFLAG_INVALIDATED
+                || (fullInvalidate && isOpaque() != mLastIsOpaque)) {
+            if (fullInvalidate) {
+                mLastIsOpaque = isOpaque();
+                mPrivateFlags &= ~PFLAG_DRAWN;
+            }
+
+            mPrivateFlags |= PFLAG_DIRTY;
+
+            if (invalidateCache) {
+                mPrivateFlags |= PFLAG_INVALIDATED;
+                mPrivateFlags &= ~PFLAG_DRAWING_CACHE_VALID;
+            }
+
+            // Propagate the damage rectangle to the parent view.
+            final AttachInfo ai = mAttachInfo;
+            final ViewParent p = mParent;
+            //当父容器不为null把需要重绘的区域传递给父容器
+            if (p != null && ai != null && l < r && t < b) {
+                final Rect damage = ai.mTmpInvalRect;
+                damage.set(l, t, r, b);
+                //注意这行代码
+                p.invalidateChild(this, damage);
+            }
+
+            // Damage the entire projection receiver, if necessary.
+            if (mBackground != null && mBackground.isProjected()) {
+                final View receiver = getProjectionReceiver();
+                if (receiver != null) {
+                    receiver.damageInParent();
+                }
+            }
+        }
+    }
+```
+
+意思就是当整个view可见的时候，会使整个view无效，会间接调用到onDraw方法，并且只能在UI线程中调用，如果要在非UI线程中调用推荐使用postInvalidate。 首先来看下 mParent.invalidateChild方法。在view中invalidateChild是个抽象方法，那我们进入ViewGroup来看下他的invalidateChild。
+
+* ViewGroup#invalidateChild
+
+```java
+   @Override
+    public final void invalidateChild(View child, final Rect dirty) {
+        final AttachInfo attachInfo = mAttachInfo;
+        ……
+        ViewParent parent = this;
+            do {
+                View view = null;
+                // If the parent is dirty opaque or not dirty, mark it dirty with the opaque
+                // flag coming from the child that initiated the invalidate
+                if (view != null) {
+                    if ((view.mViewFlags & FADING_EDGE_MASK) != 0 &&
+                            view.getSolidColor() == 0) {
+                        opaqueFlag = PFLAG_DIRTY;
+                    }
+                    if ((view.mPrivateFlags & PFLAG_DIRTY_MASK) != PFLAG_DIRTY) {
+                        view.mPrivateFlags = (view.mPrivateFlags & ~PFLAG_DIRTY_MASK) | opaqueFlag;
+                    }
+                }
+                //注意这行代码  //调用ViewGrup的invalidateChildInParent，如果已经达到最顶层view,则调用ViewRootImpl
+            //的invalidateChildInParent。
+                parent = parent.invalidateChildInParent(location, dirty);
+              ……
+            } while (parent != null);
+        }
+    }
+```
+
+* invalidate：首先会进行本身的标志位设置，看看是否需要进行mease、layout、draw操作，需要需要会进入ViewRootImpl#invalidateChildInParent，最终进入到performTraversals执行遍历绘制操作。
+* postInvalidate:postInvalidate比invalidate多了一步在ViewRootImpl的线程切换，然后下面的流程跟invalidate一摸一样。
+
+其实invalidate相比requestLayout就是在进入ViewRootImpl之前进行了一系列的标致位设置。防止view进行一系列不必要的测量和布局，当然draw流程是两者都需要进行的。然后进入ViewRootImpl的函数调用流程是这样的：
+scheduleTraversals -> doTraversal -> performTraversals，其中scheduleTraversals到doTraversal是通过Handler机制进行调用的。所以，当我们在编码时，当明确的知道没有进行控件的大小和布局改变的时候调用invalidate可以减少不必要的测量和布局，提升性能。
+

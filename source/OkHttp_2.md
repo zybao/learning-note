@@ -98,3 +98,7 @@ OkHttp默认提供了如下Interceptor：
 
 OkHttp3的拦截器执行顺序依次是：自定义Interceptors(暂且称作A) -> RetryAndFollowUpInterceptor -> BridgeInterceptor -> CacheInterceptor -> ConnectInterceptor -> 自定义NetInterceptors(暂且称作B) -> CallServerInterceptor
 
+https://blog.csdn.net/hello2mao/article/details/53201974
+
+https://www.jianshu.com/p/f7972c30fc52
+

@@ -1,3 +1,916 @@
+https://juejin.im/entry/586a12c5128fe10057037fba
+
+
+* RecyclerViewDataObserver 数据观察器
+* Recycler View循环复用系统，核心部件
+* SavedState RecyclerView状态
+* AdapterHelper 适配器更新
+* ChildHelper 管理子View
+* ViewInfoStore 存储子VIEW的动画信息
+* Adapter 数据适配器
+* LayoutManager 负责子VIEW的布局，核心部件
+* ItemAnimator Item动画
+* ViewFlinger 快速滑动管理
+* NestedScrollingChildHelper 管理子VIEW嵌套滑动
+
+
+```java
+public RecyclerView(Context context, @Nullable AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        if (attrs != null) {
+            TypedArray a = context.obtainStyledAttributes(attrs, CLIP_TO_PADDING_ATTR, defStyle, 0);
+            mClipToPadding = a.getBoolean(0, true);
+            a.recycle();
+        } else {
+            mClipToPadding = true;
+        }
+        setScrollContainer(true);
+        setFocusableInTouchMode(true);
+
+        final ViewConfiguration vc = ViewConfiguration.get(context);
+        mTouchSlop = vc.getScaledTouchSlop();
+        mScaledHorizontalScrollFactor =
+                ViewConfigurationCompat.getScaledHorizontalScrollFactor(vc, context);
+        mScaledVerticalScrollFactor =
+                ViewConfigurationCompat.getScaledVerticalScrollFactor(vc, context);
+        mMinFlingVelocity = vc.getScaledMinimumFlingVelocity();
+        mMaxFlingVelocity = vc.getScaledMaximumFlingVelocity();
+        setWillNotDraw(getOverScrollMode() == View.OVER_SCROLL_NEVER);
+
+        mItemAnimator.setListener(mItemAnimatorListener);
+        initAdapterManager();
+        initChildrenHelper();
+        // If not explicitly specified this view is important for accessibility.
+        if (ViewCompat.getImportantForAccessibility(this)
+                == ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_AUTO) {
+            ViewCompat.setImportantForAccessibility(this,
+                    ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        }
+        mAccessibilityManager = (AccessibilityManager) getContext()
+                .getSystemService(Context.ACCESSIBILITY_SERVICE);
+        setAccessibilityDelegateCompat(new RecyclerViewAccessibilityDelegate(this));
+        // Create the layoutManager if specified.
+
+        boolean nestedScrollingEnabled = true;
+
+        if (attrs != null) {
+            int defStyleRes = 0;
+            TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.RecyclerView,
+                    defStyle, defStyleRes);
+            String layoutManagerName = a.getString(R.styleable.RecyclerView_layoutManager);
+            int descendantFocusability = a.getInt(
+                    R.styleable.RecyclerView_android_descendantFocusability, -1);
+            if (descendantFocusability == -1) {
+                setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+            }
+            mEnableFastScroller = a.getBoolean(R.styleable.RecyclerView_fastScrollEnabled, false);
+            if (mEnableFastScroller) {
+                StateListDrawable verticalThumbDrawable = (StateListDrawable) a
+                        .getDrawable(R.styleable.RecyclerView_fastScrollVerticalThumbDrawable);
+                Drawable verticalTrackDrawable = a
+                        .getDrawable(R.styleable.RecyclerView_fastScrollVerticalTrackDrawable);
+                StateListDrawable horizontalThumbDrawable = (StateListDrawable) a
+                        .getDrawable(R.styleable.RecyclerView_fastScrollHorizontalThumbDrawable);
+                Drawable horizontalTrackDrawable = a
+                        .getDrawable(R.styleable.RecyclerView_fastScrollHorizontalTrackDrawable);
+                initFastScroller(verticalThumbDrawable, verticalTrackDrawable,
+                        horizontalThumbDrawable, horizontalTrackDrawable);
+            }
+            a.recycle();
+            createLayoutManager(context, layoutManagerName, attrs, defStyle, defStyleRes);
+
+            if (Build.VERSION.SDK_INT >= 21) {
+                a = context.obtainStyledAttributes(attrs, NESTED_SCROLLING_ATTRS,
+                        defStyle, defStyleRes);
+                nestedScrollingEnabled = a.getBoolean(0, true);
+                a.recycle();
+            }
+        } else {
+            setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+        }
+
+        // Re-set whether nested scrolling is enabled so that it is set on all API levels
+        setNestedScrollingEnabled(nestedScrollingEnabled);
+    }
+
+```
+
+代码进行了一系列的初始化工作,关键是createLayoutManager,创建了一个布局管理器
+
+```java
+    private void createLayoutManager(Context context, String className, AttributeSet attrs,
+            int defStyleAttr, int defStyleRes) {
+        if (className != null) {
+            className = className.trim();
+            if (!className.isEmpty()) {
+                className = getFullClassName(context, className);
+                try {
+                    ClassLoader classLoader;
+                    if (isInEditMode()) {
+                        // Stupid layoutlib cannot handle simple class loaders.
+                        classLoader = this.getClass().getClassLoader();
+                    } else {
+                        classLoader = context.getClassLoader();
+                    }
+                    Class<? extends LayoutManager> layoutManagerClass =
+                            classLoader.loadClass(className).asSubclass(LayoutManager.class);
+                    Constructor<? extends LayoutManager> constructor;
+                    Object[] constructorArgs = null;
+                    try {
+                        constructor = layoutManagerClass
+                                .getConstructor(LAYOUT_MANAGER_CONSTRUCTOR_SIGNATURE);
+                        constructorArgs = new Object[]{context, attrs, defStyleAttr, defStyleRes};
+                    } catch (NoSuchMethodException e) {
+                        try {
+                            constructor = layoutManagerClass.getConstructor();
+                        } catch (NoSuchMethodException e1) {
+                            e1.initCause(e);
+                            throw new IllegalStateException(attrs.getPositionDescription()
+                                    + ": Error creating LayoutManager " + className, e1);
+                        }
+                    }
+                    constructor.setAccessible(true);
+                    setLayoutManager(constructor.newInstance(constructorArgs));
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException(attrs.getPositionDescription()
+                            + ": Unable to find LayoutManager " + className, e);
+                } catch (InvocationTargetException e) {
+                    throw new IllegalStateException(attrs.getPositionDescription()
+                            + ": Could not instantiate the LayoutManager: " + className, e);
+                } catch (InstantiationException e) {
+                    throw new IllegalStateException(attrs.getPositionDescription()
+                            + ": Could not instantiate the LayoutManager: " + className, e);
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException(attrs.getPositionDescription()
+                            + ": Cannot access non-public constructor " + className, e);
+                } catch (ClassCastException e) {
+                    throw new IllegalStateException(attrs.getPositionDescription()
+                            + ": Class is not a LayoutManager " + className, e);
+                }
+            }
+        }
+    }
+```
+
+如果在布局文件里面设置了布局管理器的类型，那么这里会通过反射的方式实例化出对应的布局管理器。最后将实例化出的布局管理器设置到当前的RecyclerView
+
+```java
+    /**
+     * Set the {@link LayoutManager} that this RecyclerView will use.
+     *
+     * <p>In contrast to other adapter-backed views such as {@link android.widget.ListView}
+     * or {@link android.widget.GridView}, RecyclerView allows client code to provide custom
+     * layout arrangements for child views. These arrangements are controlled by the
+     * {@link LayoutManager}. A LayoutManager must be provided for RecyclerView to function.</p>
+     *
+     * <p>Several default strategies are provided for common uses such as lists and grids.</p>
+     *
+     * @param layout LayoutManager to use
+     */
+    public void setLayoutManager(LayoutManager layout) {
+        if (layout == mLayout) {
+            return;
+        }
+        stopScroll();
+        // TODO We should do this switch a dispatchLayout pass and animate children. There is a good
+        // chance that LayoutManagers will re-use views.
+        if (mLayout != null) {
+            // end all running animations
+            if (mItemAnimator != null) {
+                mItemAnimator.endAnimations();
+            }
+            mLayout.removeAndRecycleAllViews(mRecycler);
+            mLayout.removeAndRecycleScrapInt(mRecycler);
+            mRecycler.clear();
+
+            if (mIsAttached) {
+                mLayout.dispatchDetachedFromWindow(this, mRecycler);
+            }
+            mLayout.setRecyclerView(null);
+            mLayout = null;
+        } else {
+            mRecycler.clear();
+        }
+        // this is just a defensive measure for faulty item animators.
+        mChildHelper.removeAllViewsUnfiltered();
+        mLayout = layout;
+        if (layout != null) {
+            if (layout.mRecyclerView != null) {
+                throw new IllegalArgumentException("LayoutManager " + layout
+                        + " is already attached to a RecyclerView:"
+                        + layout.mRecyclerView.exceptionLabel());
+            }
+            mLayout.setRecyclerView(this);
+            if (mIsAttached) {
+                mLayout.dispatchAttachedToWindow(this);
+            }
+        }
+        mRecycler.updateViewCacheSize();
+        requestLayout();
+    }
+```
+
+设置布局管理器之前会先清空所有之前的缓存VIEW。最后通知VIEW刷新,requestLayout可见要绘制了
+
+```java
+    @Override
+    public void requestLayout() {
+        if (mEatRequestLayout == 0 && !mLayoutFrozen) {
+            super.requestLayout();
+        } else {
+            mLayoutRequestEaten = true;
+        }
+    }
+```
+
+调用View#requestLayout
+
+```java
+    /**
+     * Call this when something has changed which has invalidated the
+     * layout of this view. This will schedule a layout pass of the view
+     * tree. This should not be called while the view hierarchy is currently in a layout
+     * pass ({@link #isInLayout()}. If layout is happening, the request may be honored at the
+     * end of the current layout pass (and then layout will run again) or after the current
+     * frame is drawn and the next layout occurs.
+     *
+     * <p>Subclasses which override this method should call the superclass method to
+     * handle possible request-during-layout errors correctly.</p>
+     */
+    @CallSuper
+    public void requestLayout() {
+        if (mMeasureCache != null) mMeasureCache.clear();
+
+        if (mAttachInfo != null && mAttachInfo.mViewRequestingLayout == null) {
+            // Only trigger request-during-layout logic if this is the view requesting it,
+            // not the views in its parent hierarchy
+            ViewRootImpl viewRoot = getViewRootImpl();
+            if (viewRoot != null && viewRoot.isInLayout()) {
+                if (!viewRoot.requestLayoutDuringLayout(this)) {
+                    return;
+                }
+            }
+            mAttachInfo.mViewRequestingLayout = this;
+        }
+
+        mPrivateFlags |= PFLAG_FORCE_LAYOUT;
+        mPrivateFlags |= PFLAG_INVALIDATED;
+
+        if (mParent != null && !mParent.isLayoutRequested()) {
+            mParent.requestLayout();
+        }
+        if (mAttachInfo != null && mAttachInfo.mViewRequestingLayout == this) {
+            mAttachInfo.mViewRequestingLayout = null;
+        }
+    }
+```
+在requestLayout方法中，首先先判断当前View树是否正在布局流程，接着为当前子View设置标记位，该标记位的作用就是标记了当前的View是需要进行重新布局的，接着调用mParent.requestLayout方法，这个十分重要，因为这里是向父容器请求布局，即调用父容器的requestLayout方法，为父容器添加PFLAG_FORCE_LAYOUT标记位，而父容器又会调用它的父容器的requestLayout方法，即requestLayout事件层层向上传递，直到DecorView，即根View，而根View又会传递给ViewRootImpl，也即是说子View的requestLayout事件，最终会被ViewRootImpl接收并得到处理。纵观这个向上传递的流程，其实是采用了责任链模式，即不断向上传递该事件，直到找到能处理该事件的上级，在这里，只有ViewRootImpl能够处理requestLayout事件。
+
+最终调用到recyclerview的onMeature
+
+recyclerView.setLayoutManager(layoutManager)就是桥接模式的体现，因为layoutManager的实现可以有多种,即桥接模式具体实现化逻辑ConcreteImplementor
+
+* ListView功能 `recyclerView.setLayoutManager(new LinearLayoutManager(this))`;
+* GridView功能 `recyclerView.setLayoutManager(new GridLayoutManager(this,3))`;
+* 瀑布流形式功能 `recyclerView.setLayoutManager(new StaggeredGridLayoutManager(2,StaggeredGridLayoutManager.VERTICAL))`;
+* 横向ListView的功能 `recyclerView.setLayoutManager(new LinearLayoutManager(this)); layoutManager.setOrientation(…)`;
+
+```java
+public LinearLayoutManager(Context context, int orientation, boolean reverseLayout) {
+    setOrientation(orientation);
+    setReverseLayout(reverseLayout);
+    setAutoMeasureEnabled(true);
+}
+public StaggeredGridLayoutManager(Context context, AttributeSet attrs, int defStyleAttr,
+        int defStyleRes) {
+    Properties properties = getProperties(context, attrs, defStyleAttr, defStyleRes);
+    setOrientation(properties.orientation);
+    setSpanCount(properties.spanCount);
+    setReverseLayout(properties.reverseLayout);
+    setAutoMeasureEnabled(mGapStrategy != GAP_HANDLING_NONE);
+    mLayoutState = new LayoutState();
+    createOrientationHelpers();
+}
+GridLayoutManager继承LinearLayoutManager
+```
+
+可见其初始化时候会设置AutoMeasurEnabled,前面说过，RecyclerView会将测量与布局交给LayoutManager来做，并且LayoutManager有一个叫做mAutoMeasure的属性，这个属性用来控制LayoutManager是否开启自动测量，开启自动测量的话布局就交由RecyclerView使用一套默认的测量机制，否则，自定义的LayoutManager需要重写onMeasure来处理自身的测量工作。RecyclerView目前提供的几种LayoutManager都开启了自动测量，所以这里我们关注一下自动测量部分的逻辑：
+
+```java
+    @Override
+    protected void onMeasure(int widthSpec, int heightSpec) {
+        if (mLayout == null) {
+            defaultOnMeasure(widthSpec, heightSpec);
+            return;
+        }
+        if (mLayout.mAutoMeasure) {
+            final int widthMode = MeasureSpec.getMode(widthSpec);
+            final int heightMode = MeasureSpec.getMode(heightSpec);
+            final boolean skipMeasure = widthMode == MeasureSpec.EXACTLY
+                    && heightMode == MeasureSpec.EXACTLY;
+            mLayout.onMeasure(mRecycler, mState, widthSpec, heightSpec);
+            if (skipMeasure || mAdapter == null) {
+                return;
+            }
+            if (mState.mLayoutStep == State.STEP_START) {
+                dispatchLayoutStep1();
+            }
+            // set dimensions in 2nd step. Pre-layout should happen with old dimensions for
+            // consistency
+            mLayout.setMeasureSpecs(widthSpec, heightSpec);
+            mState.mIsMeasuring = true;
+            dispatchLayoutStep2();
+
+            // now we can get the width and height from the children.
+            mLayout.setMeasuredDimensionFromChildren(widthSpec, heightSpec);
+
+            // if RecyclerView has non-exact width and height and if there is at least one child
+            // which also has non-exact width & height, we have to re-measure.
+            if (mLayout.shouldMeasureTwice()) {
+                mLayout.setMeasureSpecs(
+                        MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+                mState.mIsMeasuring = true;
+                dispatchLayoutStep2();
+                // now we can get the width and height from the children.
+                mLayout.setMeasuredDimensionFromChildren(widthSpec, heightSpec);
+            }
+        } else {
+            if (mHasFixedSize) {
+                mLayout.onMeasure(mRecycler, mState, widthSpec, heightSpec);
+                return;
+            }
+            // custom onMeasure
+            if (mAdapterUpdateDuringMeasure) {
+                eatRequestLayout();
+                onEnterLayoutOrScroll();
+                processAdapterUpdatesAndSetAnimationFlags();
+                onExitLayoutOrScroll();
+
+                if (mState.mRunPredictiveAnimations) {
+                    mState.mInPreLayout = true;
+                } else {
+                    // consume remaining updates to provide a consistent state with the layout pass.
+                    mAdapterHelper.consumeUpdatesInOnePass();
+                    mState.mInPreLayout = false;
+                }
+                mAdapterUpdateDuringMeasure = false;
+                resumeRequestLayout(false);
+            } else if (mState.mRunPredictiveAnimations) {
+                // If mAdapterUpdateDuringMeasure is false and mRunPredictiveAnimations is true:
+                // this means there is already an onMeasure() call performed to handle the pending
+                // adapter change, two onMeasure() calls can happen if RV is a child of LinearLayout
+                // with layout_width=MATCH_PARENT. RV cannot call LM.onMeasure() second time
+                // because getViewForPosition() will crash when LM uses a child to measure.
+                setMeasuredDimension(getMeasuredWidth(), getMeasuredHeight());
+                return;
+            }
+
+            if (mAdapter != null) {
+                mState.mItemCount = mAdapter.getItemCount();
+            } else {
+                mState.mItemCount = 0;
+            }
+            eatRequestLayout();
+            mLayout.onMeasure(mRecycler, mState, widthSpec, heightSpec);
+            resumeRequestLayout(false);
+            mState.mInPreLayout = false; // clear
+        }
+    }
+```
+
+自动测量的原理如下:当RecyclerView的宽高都为EXACTLY时，可以直接设置对应的宽高，然后返回，结束测量.
+
+整个mLayout.mAutoMeasure就是在做前两步的布局，可见RecylerView的measure与layout是紧密相关的，所以我们来赶快瞧一瞧RecyclerView是如何layout的。
+
+```java
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        TraceCompat.beginSection(TRACE_ON_LAYOUT_TAG);
+        dispatchLayout();
+        TraceCompat.endSection();
+        mFirstLayoutComplete = true;
+    }
+
+    /**
+     * Wrapper around layoutChildren() that handles animating changes caused by layout.
+     * Animations work on the assumption that there are five different kinds of items
+     * in play:
+     * PERSISTENT: items are visible before and after layout
+     * REMOVED: items were visible before layout and were removed by the app
+     * ADDED: items did not exist before layout and were added by the app
+     * DISAPPEARING: items exist in the data set before/after, but changed from
+     * visible to non-visible in the process of layout (they were moved off
+     * screen as a side-effect of other changes)
+     * APPEARING: items exist in the data set before/after, but changed from
+     * non-visible to visible in the process of layout (they were moved on
+     * screen as a side-effect of other changes)
+     * The overall approach figures out what items exist before/after layout and
+     * infers one of the five above states for each of the items. Then the animations
+     * are set up accordingly:
+     * PERSISTENT views are animated via
+     * {@link ItemAnimator#animatePersistence(ViewHolder, ItemHolderInfo, ItemHolderInfo)}
+     * DISAPPEARING views are animated via
+     * {@link ItemAnimator#animateDisappearance(ViewHolder, ItemHolderInfo, ItemHolderInfo)}
+     * APPEARING views are animated via
+     * {@link ItemAnimator#animateAppearance(ViewHolder, ItemHolderInfo, ItemHolderInfo)}
+     * and changed views are animated via
+     * {@link ItemAnimator#animateChange(ViewHolder, ViewHolder, ItemHolderInfo, ItemHolderInfo)}.
+     */
+    void dispatchLayout() {
+        if (mAdapter == null) {
+            Log.e(TAG, "No adapter attached; skipping layout");
+            // leave the state in START
+            return;
+        }
+        if (mLayout == null) {
+            Log.e(TAG, "No layout manager attached; skipping layout");
+            // leave the state in START
+            return;
+        }
+        mState.mIsMeasuring = false;
+        if (mState.mLayoutStep == State.STEP_START) {
+            dispatchLayoutStep1();
+            mLayout.setExactMeasureSpecsFrom(this);
+            dispatchLayoutStep2();
+        } else if (mAdapterHelper.hasUpdates() || mLayout.getWidth() != getWidth()
+                || mLayout.getHeight() != getHeight()) {
+            // First 2 steps are done in onMeasure but looks like we have to run again due to
+            // changed size.
+            mLayout.setExactMeasureSpecsFrom(this);
+            dispatchLayoutStep2();
+        } else {
+            // always make sure we sync them (to ensure mode is exact)
+            mLayout.setExactMeasureSpecsFrom(this);
+        }
+        dispatchLayoutStep3();
+    }
+```
+
+通过查看dispatchLayout的代码正好验证了我们前文关于RecyclerView的layout三步走原则，如果在onMeasure中已经完成了step1与step2，则只会执行step3，否则三步会依次触发。接下来我们一步一步的进行分析
+
+## `dispatchLayoutStep1`
+
+The first step of a layout where we;
+ - process adapter updates
+ - decide which animation should run
+ - save information about current views
+ - If necessary, run predictive layout and save its information
+
+step的第一步目的就是在记录View的状态，首先遍历当前所有的View依次进行处理，mItemAnimator会根据每个View的信息封装成一个ItemHolderInfo，这个ItemHolderInfo中主要包含的就是当前View的位置状态等。然后ItemHolderInfo 就被存入mViewInfoStore中,由代码可见被存在ArrayMap和LongSparseArray中,其是对HashMap的android优化,是用两个数组来完成存储,arraymap的key可以是任意值,SparseArray的key只能为int,其核心是折半查找。
+
+注意这里调用的是mViewInfoStore的addToPreLayout方法，我们追进：
+
+```java
+    /**
+     * Adds the item information to the prelayout tracking
+     * @param holder The ViewHolder whose information is being saved
+     * @param info The information to save
+     */
+    void addToPreLayout(ViewHolder holder, ItemHolderInfo info) {
+        InfoRecord record = mLayoutHolderMap.get(holder);
+        if (record == null) {
+            record = InfoRecord.obtain();
+            mLayoutHolderMap.put(holder, record);
+        }
+        record.preInfo = info;
+        record.flags |= FLAG_PRE;
+    }
+```
+
+addToPreLayout方法中会根据holder来查询InfoRecord信息，如果没有，则生成，然后将info信息赋值给InfoRecord的preInfo变量。最后标记FLAG_PRE信息，如此，完成函数。所以纵观整个layout的第一步，就是在记录当前的View信息，因为进入第二步后，View的信息就将被改变了。
+
+## `dispatchLayoutStep2`
+
+```java
+    /**
+     * The second layout step where we do the actual layout of the views for the final state.
+     * This step might be run multiple times if necessary (e.g. measure).
+     */
+    private void dispatchLayoutStep2() {
+        eatRequestLayout();
+        onEnterLayoutOrScroll();
+        mState.assertLayoutStep(State.STEP_LAYOUT | State.STEP_ANIMATIONS);
+        mAdapterHelper.consumeUpdatesInOnePass();
+        mState.mItemCount = mAdapter.getItemCount();
+        mState.mDeletedInvisibleItemCountSincePreviousLayout = 0;
+
+        // Step 2: Run layout
+        mState.mInPreLayout = false;
+        mLayout.onLayoutChildren(mRecycler, mState);
+
+        mState.mStructureChanged = false;
+        mPendingSavedState = null;
+
+        // onLayoutChildren may have caused client code to disable item animations; re-check
+        mState.mRunSimpleAnimations = mState.mRunSimpleAnimations && mItemAnimator != null;
+        mState.mLayoutStep = State.STEP_ANIMATIONS;
+        onExitLayoutOrScroll();
+        resumeRequestLayout(false);
+    }
+```
+
+layout的第二步主要就是真正的去布局View了，前面也说过，RecyclerView的布局是由LayoutManager负责的，所以第二步的主要工作也都在LayoutManager中，由于每种布局的方式不一样，这里我们以常见的LinearLayoutManager为例。我们看其onLayoutChildren方法：
+
+```java
+    @Override
+    public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
+        // layout algorithm:
+        // 1) by checking children and other variables, find an anchor coordinate and an anchor
+        //  item position.
+        // 2) fill towards start, stacking from bottom
+        // 3) fill towards end, stacking from top
+        // 4) scroll to fulfill requirements like stack from bottom.
+        // create layout state
+        if (DEBUG) {
+            Log.d(TAG, "is pre layout:" + state.isPreLayout());
+        }
+        if (mPendingSavedState != null || mPendingScrollPosition != NO_POSITION) {
+            if (state.getItemCount() == 0) {
+                removeAndRecycleAllViews(recycler);
+                return;
+            }
+        }
+        if (mPendingSavedState != null && mPendingSavedState.hasValidAnchor()) {
+            mPendingScrollPosition = mPendingSavedState.mAnchorPosition;
+        }
+
+        ensureLayoutState();
+        mLayoutState.mRecycle = false;
+        // resolve layout direction
+        resolveShouldLayoutReverse();
+
+        final View focused = getFocusedChild();
+        if (!mAnchorInfo.mValid || mPendingScrollPosition != NO_POSITION
+                || mPendingSavedState != null) {
+            mAnchorInfo.reset();
+            mAnchorInfo.mLayoutFromEnd = mShouldReverseLayout ^ mStackFromEnd;
+            // calculate anchor position and coordinate
+            updateAnchorInfoForLayout(recycler, state, mAnchorInfo);
+            mAnchorInfo.mValid = true;
+        } else if (focused != null && (mOrientationHelper.getDecoratedStart(focused)
+                        >= mOrientationHelper.getEndAfterPadding()
+                || mOrientationHelper.getDecoratedEnd(focused)
+                <= mOrientationHelper.getStartAfterPadding())) {
+            // This case relates to when the anchor child is the focused view and due to layout
+            // shrinking the focused view fell outside the viewport, e.g. when soft keyboard shows
+            // up after tapping an EditText which shrinks RV causing the focused view (The tapped
+            // EditText which is the anchor child) to get kicked out of the screen. Will update the
+            // anchor coordinate in order to make sure that the focused view is laid out. Otherwise,
+            // the available space in layoutState will be calculated as negative preventing the
+            // focused view from being laid out in fill.
+            // Note that we won't update the anchor position between layout passes (refer to
+            // TestResizingRelayoutWithAutoMeasure), which happens if we were to call
+            // updateAnchorInfoForLayout for an anchor that's not the focused view (e.g. a reference
+            // child which can change between layout passes).
+            mAnchorInfo.assignFromViewAndKeepVisibleRect(focused);
+        }
+        if (DEBUG) {
+            Log.d(TAG, "Anchor info:" + mAnchorInfo);
+        }
+
+        // LLM may decide to layout items for "extra" pixels to account for scrolling target,
+        // caching or predictive animations.
+        int extraForStart;
+        int extraForEnd;
+        final int extra = getExtraLayoutSpace(state);
+        // If the previous scroll delta was less than zero, the extra space should be laid out
+        // at the start. Otherwise, it should be at the end.
+        if (mLayoutState.mLastScrollDelta >= 0) {
+            extraForEnd = extra;
+            extraForStart = 0;
+        } else {
+            extraForStart = extra;
+            extraForEnd = 0;
+        }
+        extraForStart += mOrientationHelper.getStartAfterPadding();
+        extraForEnd += mOrientationHelper.getEndPadding();
+        if (state.isPreLayout() && mPendingScrollPosition != NO_POSITION
+                && mPendingScrollPositionOffset != INVALID_OFFSET) {
+            // if the child is visible and we are going to move it around, we should layout
+            // extra items in the opposite direction to make sure new items animate nicely
+            // instead of just fading in
+            final View existing = findViewByPosition(mPendingScrollPosition);
+            if (existing != null) {
+                final int current;
+                final int upcomingOffset;
+                if (mShouldReverseLayout) {
+                    current = mOrientationHelper.getEndAfterPadding()
+                            - mOrientationHelper.getDecoratedEnd(existing);
+                    upcomingOffset = current - mPendingScrollPositionOffset;
+                } else {
+                    current = mOrientationHelper.getDecoratedStart(existing)
+                            - mOrientationHelper.getStartAfterPadding();
+                    upcomingOffset = mPendingScrollPositionOffset - current;
+                }
+                if (upcomingOffset > 0) {
+                    extraForStart += upcomingOffset;
+                } else {
+                    extraForEnd -= upcomingOffset;
+                }
+            }
+        }
+        int startOffset;
+        int endOffset;
+        final int firstLayoutDirection;
+        if (mAnchorInfo.mLayoutFromEnd) {
+            firstLayoutDirection = mShouldReverseLayout ? LayoutState.ITEM_DIRECTION_TAIL
+                    : LayoutState.ITEM_DIRECTION_HEAD;
+        } else {
+            firstLayoutDirection = mShouldReverseLayout ? LayoutState.ITEM_DIRECTION_HEAD
+                    : LayoutState.ITEM_DIRECTION_TAIL;
+        }
+
+        onAnchorReady(recycler, state, mAnchorInfo, firstLayoutDirection);
+        detachAndScrapAttachedViews(recycler);
+        mLayoutState.mInfinite = resolveIsInfinite();
+        mLayoutState.mIsPreLayout = state.isPreLayout();
+        if (mAnchorInfo.mLayoutFromEnd) {
+            // fill towards start
+            updateLayoutStateToFillStart(mAnchorInfo);
+            mLayoutState.mExtra = extraForStart;
+            fill(recycler, mLayoutState, state, false);
+            startOffset = mLayoutState.mOffset;
+            final int firstElement = mLayoutState.mCurrentPosition;
+            if (mLayoutState.mAvailable > 0) {
+                extraForEnd += mLayoutState.mAvailable;
+            }
+            // fill towards end
+            updateLayoutStateToFillEnd(mAnchorInfo);
+            mLayoutState.mExtra = extraForEnd;
+            mLayoutState.mCurrentPosition += mLayoutState.mItemDirection;
+            fill(recycler, mLayoutState, state, false);
+            endOffset = mLayoutState.mOffset;
+
+            if (mLayoutState.mAvailable > 0) {
+                // end could not consume all. add more items towards start
+                extraForStart = mLayoutState.mAvailable;
+                updateLayoutStateToFillStart(firstElement, startOffset);
+                mLayoutState.mExtra = extraForStart;
+                fill(recycler, mLayoutState, state, false);
+                startOffset = mLayoutState.mOffset;
+            }
+        } else {
+            // fill towards end
+            updateLayoutStateToFillEnd(mAnchorInfo);
+            mLayoutState.mExtra = extraForEnd;
+            fill(recycler, mLayoutState, state, false);
+            endOffset = mLayoutState.mOffset;
+            final int lastElement = mLayoutState.mCurrentPosition;
+            if (mLayoutState.mAvailable > 0) {
+                extraForStart += mLayoutState.mAvailable;
+            }
+            // fill towards start
+            updateLayoutStateToFillStart(mAnchorInfo);
+            mLayoutState.mExtra = extraForStart;
+            mLayoutState.mCurrentPosition += mLayoutState.mItemDirection;
+            fill(recycler, mLayoutState, state, false);
+            startOffset = mLayoutState.mOffset;
+
+            if (mLayoutState.mAvailable > 0) {
+                extraForEnd = mLayoutState.mAvailable;
+                // start could not consume all it should. add more items towards end
+                updateLayoutStateToFillEnd(lastElement, endOffset);
+                mLayoutState.mExtra = extraForEnd;
+                fill(recycler, mLayoutState, state, false);
+                endOffset = mLayoutState.mOffset;
+            }
+        }
+
+        // changes may cause gaps on the UI, try to fix them.
+        // TODO we can probably avoid this if neither stackFromEnd/reverseLayout/RTL values have
+        // changed
+        if (getChildCount() > 0) {
+            // because layout from end may be changed by scroll to position
+            // we re-calculate it.
+            // find which side we should check for gaps.
+            if (mShouldReverseLayout ^ mStackFromEnd) {
+                int fixOffset = fixLayoutEndGap(endOffset, recycler, state, true);
+                startOffset += fixOffset;
+                endOffset += fixOffset;
+                fixOffset = fixLayoutStartGap(startOffset, recycler, state, false);
+                startOffset += fixOffset;
+                endOffset += fixOffset;
+            } else {
+                int fixOffset = fixLayoutStartGap(startOffset, recycler, state, true);
+                startOffset += fixOffset;
+                endOffset += fixOffset;
+                fixOffset = fixLayoutEndGap(endOffset, recycler, state, false);
+                startOffset += fixOffset;
+                endOffset += fixOffset;
+            }
+        }
+        layoutForPredictiveAnimations(recycler, state, startOffset, endOffset);
+        if (!state.isPreLayout()) {
+            mOrientationHelper.onLayoutComplete();
+        } else {
+            mAnchorInfo.reset();
+        }
+        mLastStackFromEnd = mStackFromEnd;
+        if (DEBUG) {
+            validateChildOrder();
+        }
+    }
+```
+
+整个onLayoutChildren过程还是很复杂的，这里我尽量省略了一些与流程关系不大的细节处理代码。整个onLayoutChildren过程可以大致整理如下：
+
+* 找到anchor点
+* 根据anchor一直向前布局，直至填充满anchor点前面的所有区域
+* 根据anchor一直向后布局，直至填充满anchor点后面的所有区域这里我以垂直布局来说明，mAnchorInfo为布局锚点信息，包含了子控件在Y轴上起始绘制偏移量（coordinate），ItemView在Adapter中的索引位置（position）和布局方向（mLayoutFromEnd）——这里是指start、end方向。这部分代码的功能就是：确定布局锚点，以此为起点向开始和结束方向填充ItemView
+
+anchor点的寻找是由updateAnchorInfoForLayout函数负责的：
+
+```java
+    private void updateAnchorInfoForLayout(RecyclerView.Recycler recycler, RecyclerView.State state,
+            AnchorInfo anchorInfo) {
+        if (updateAnchorFromPendingData(state, anchorInfo)) {
+            if (DEBUG) {
+                Log.d(TAG, "updated anchor info from pending information");
+            }
+            return;
+        }
+
+        if (updateAnchorFromChildren(recycler, state, anchorInfo)) {
+            if (DEBUG) {
+                Log.d(TAG, "updated anchor info from existing children");
+            }
+            return;
+        }
+        if (DEBUG) {
+            Log.d(TAG, "deciding anchor info for fresh state");
+        }
+        anchorInfo.assignCoordinateFromPadding();
+        anchorInfo.mPosition = mStackFromEnd ? state.getItemCount() - 1 : 0;
+    }
+```
+
+## `dispatchLayoutStep3`
+```java
+private void dispatchLayoutStep3() {
+    mState.mLayoutStep = State.STEP_START;
+    if (mState.mRunSimpleAnimations) {
+        for (int i = mChildHelper.getChildCount() - 1; i >= 0; i--) {
+            ...
+            final ItemHolderInfo animationInfo = mItemAnimator
+                    .recordPostLayoutInformation(mState, holder);
+                mViewInfoStore.addToPostLayout(holder, animationInfo);
+        }
+        mViewInfoStore.process(mViewInfoProcessCallback);
+    }
+    ...
+}
+```
+
+这一步是与第一步呼应的的，此时由于子View都已完成布局，所以子View的信息都发生了变化。我们会看到第一步出现的mViewInfoStore和mItemAnimator再次登场，这次mItemAnimator调用的是recordPostLayoutInformation方法，而mViewInfoStore调用的是addToPostLayout方法，还记得刚刚我强调的吗，之前是pre，也就是真正布局之前的状态，而现在要记录布局之后的状态，我们追进addToPostLayout：
+
+```java
+    /**
+     * Adds the item information to the post layout list
+     * @param holder The ViewHolder whose information is being saved
+     * @param info The information to save
+     */
+    void addToPostLayout(ViewHolder holder, ItemHolderInfo info) {
+        InfoRecord record = mLayoutHolderMap.get(holder);
+        if (record == null) {
+            record = InfoRecord.obtain();
+            mLayoutHolderMap.put(holder, record);
+        }
+        record.postInfo = info;
+        record.flags |= FLAG_POST;
+    }
+```
+
+
+
+和第一步的addToPreLayout类似，不过这次info信息被赋值给了record的postInfo变量，这样，一个record中就包含了布局前后view的状态。
+
+最后，mViewInfoStore调用了process方法，这个方法就是根据mViewInfoStore中的View信息，来执行动画逻辑，这又是一个可以展看很多的点，这里不做探讨，感兴趣的可以深入的看一下，会对动画流程有更直观的体会。接下来就是onDraw,RecyclerView的draw过程可以分为２部分来看：RecyclerView负责绘制所有decoration；ItemView的绘制由ViewGroup处理，这里的绘制是android常规绘制逻辑，就不再阐述了。下面来看看RecyclerView的draw()和onDraw()方法：
+
+```java
+@Override
+public void draw(Canvas c) {
+    super.draw(c);
+    final int count = mItemDecorations.size();
+    for (int i = 0; i < count; i++) {
+        mItemDecorations.get(i).onDrawOver(c, this, mState);
+    }
+    ...
+}
+
+@Override
+public void onDraw(Canvas c) {
+    super.onDraw(c);
+    final int count = mItemDecorations.size();
+    for (int i = 0; i < count; i++) {
+        mItemDecorations.get(i).onDraw(c, this, mState);
+    }
+}
+```
+
+好了,测量,布局,绘制都大体讲了一下,回到我们开头,setLayoutManager已经完成,接下来是setAdapter(适配器模式),我们一起结合动画的实现(观察者模式)来解读,先看一下adapter类
+
+```java
+public static abstract class Adapter {
+    private final AdapterDataObservable mObservable = new AdapterDataObservable();
+
+    public void registerAdapterDataObserver(AdapterDataObserver observer) {
+        mObservable.registerObserver(observer);
+    }
+
+    public void unregisterAdapterDataObserver(AdapterDataObserver observer) {
+        mObservable.unregisterObserver(observer);
+    }
+
+    public final void notifyItemInserted(int position) {
+        mObservable.notifyItemRangeInserted(position, 1);
+    }
+}
+```
+
+RecyclerView的Adapter，这个控件需要的是View(dst),而我们有的一般是datas(src),所以适配器Adapter就是完成了数据源datas 转化成 ItemView的工作。带入src->Adapter->dst中，即datas->Adapter->View. 通过public abstract void onBindViewHolder(VH holder, int position);将datas绑定到view然后返回ViewHolder我们可以看到Adapter中包含一个AdapterDataObservable的对象mObservable，这个是一个可观察者，在可观察者中可以注册一系列的观察者AdapterDataObserver。在我们调用的notify函数的时候，就是可观察者发出通知，这时已经注册的观察者都可以收到这个通知，然后依次进行处理.
+
+注册观察者的地方就是在RecyclerView的这个函数中。这个是setAdapter方法最终调用的地方。它主要做了：
+
+* 如果之前存在Adapter，先移除原来的，注销观察者，和从RecyclerView Detached。
+* 然后根据参数，决定是否清除原来的ViewHolder
+* 然后重置AdapterHelper，并更新Adapter，注册观察者。
+
+```java
+    /**
+     * Set a new adapter to provide child views on demand.
+     * <p>
+     * When adapter is changed, all existing views are recycled back to the pool. If the pool has
+     * only one adapter, it will be cleared.
+     *
+     * @param adapter The new adapter to set, or null to set no adapter.
+     * @see #swapAdapter(Adapter, boolean)
+     */
+    public void setAdapter(Adapter adapter) {
+        // bail out if layout is frozen
+        setLayoutFrozen(false);
+        setAdapterInternal(adapter, false, true);
+        requestLayout();
+    }
+```
+
+
+# 滑动
+
+RecyclerView的滑动过程可以分为2个阶段：手指在屏幕上移动，使RecyclerView滑动的过程，可以称为scroll；手指离开屏幕，RecyclerView继续滑动一段距离的过程，可以称为fling。现在先看看RecyclerView的触屏事件处理onTouchEvent()方法：
+
+# 缓存逻辑
+与ListView不同，RecyclerView的缓存是分为多级的，但其实整个的缓存逻辑还是很容易理解的，Recycler的作用就是重用ItemView。在填充ItemView的时候，ItemView是从它获取的；滑出屏幕的ItemView是由它回收的。对于不同状态的ItemView存储在了不同的集合中，比如有scrapped、cached、exCached、recycled，当然这些集合并不是都定义在同一个类里。
+
+回到之前的layoutChunk方法中，有行代码layoutState.next(recycler)，它的作用自然就是获取ItemView，我们进入这个方法查看，最终它会调用到RecyclerView.Recycler.getViewForPosition()方法：
+
+```java
+View getViewForPosition(int position, boolean dryRun) {
+    boolean fromScrap = false;
+    ViewHolder holder = null;
+    if (mState.isPreLayout()) {
+        holder = getChangedScrapViewForPosition(position);
+        fromScrap = holder != null;
+    }
+    if (holder == null) {
+        holder = getScrapViewForPosition(position, INVALID_TYPE, dryRun);
+       ...
+    }
+    if (holder == null) {
+        final int offsetPosition = mAdapterHelper.findPositionOffset(position);
+        final int type = mAdapter.getItemViewType(offsetPosition);
+        if (mAdapter.hasStableIds()) {
+            holder = getScrapViewForId(mAdapter.getItemId(offsetPosition), type, dryRun);
+        }
+        if (holder == null && mViewCacheExtension != null) {
+            final View view = mViewCacheExtension
+                    .getViewForPositionAndType(this, position, type);
+           ...
+        }
+        if (holder == null) { // fallback to recycler
+            holder = getRecycledViewPool().getRecycledView(type);
+            if (holder != null) {
+                holder.resetInternal();
+                if (FORCE_INVALIDATE_DISPLAY_LIST) {
+                    invalidateDisplayListInt(holder);
+                }
+            }
+        }
+        if (holder == null) {
+            holder = mAdapter.createViewHolder(RecyclerView.this, type);
+        }
+    }
+   //生成LayoutParams的代码 ...
+    return holder.itemView;
+}
+```
+
+
+
+获取View的逻辑可以整理成如下：根据列表位置获取ItemView，先后从scrapped、cached、exCached、recycled集合中查找相应的ItemView，如果没有找到，就创建（Adapter.createViewHolder()），最后与数据集绑定。其中scrapped、cached和exCached集合定义在RecyclerView.Recycler中，分别表示将要在RecyclerView中删除的ItemView、一级缓存ItemView和二级缓存ItemView，cached集合的大小默认为２，exCached是需要我们通过RecyclerView.ViewCacheExtension自己实现的，默认没有；recycled集合其实是一个Map,private SparseArray<ArrayList<ViewHolder>> mScrap = new SparseArray<ArrayList<ViewHolder>>();，定义在RecyclerView.RecycledViewPool中，将ItemView以ItemType分类保存了下来，这里算是RecyclerView设计上的亮点，通过RecyclerView.RecycledViewPool可以实现在不同的RecyclerView之间共享ItemView，只要为这些不同RecyclerView设置同一个RecyclerView.RecycledViewPool就可以了。
+
+上面解释了ItemView从不同集合中获取的方式，那么RecyclerView又是在什么时候向这些集合中添加ItemView的呢？下面我逐个介绍下。scrapped集合中存储的其实是正在执行REMOVE操作的ItemView，这部分会在后文进一步描述。在fill()方法的循环体中有行代码recycleByLayoutState(recycler, layoutState);，最终这个方法会执行到RecyclerView.Recycler.recycleViewHolderInternal()方法：
+
 
 # [Recycler](http://blog.csdn.net/fyfcauc/article/details/54342303)
 Recycler虽然命名上看，像是只承担了View回收的职责，其真正的定位是RecyclerView的View提供者(甚至是管理者), 包括生成新View, 复用旧View，回收View，重新绑定View等逻辑都被封装在Recycler中。外部调用者只需要调用Recycler的接口获取合适的View即可，不需要关心View获取和配置等具体细节，Recycler对外提供了View的回收和获取服务

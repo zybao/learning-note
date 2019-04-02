@@ -1,4 +1,4 @@
-https://juejin.im/entry/5a654365f265da3e3e33e258
+https://juejin.im/entry/5a654365f265da3  e3e33e258
 
 # View的生命周期方法
 * 创建

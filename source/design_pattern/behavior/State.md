@@ -7,7 +7,7 @@ public interface State {
 
   void observe();
 
-}
+}  
 
 public class Mammoth {
 

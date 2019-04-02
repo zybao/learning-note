@@ -125,3 +125,9 @@ public class Messenger {
 
 }
 ```
+
+# Android 应用
+
+定义：将对象组成成树形结构，以表示“部分-整体”的层次结构，使得用户对单个对象和组合对象的使用具有一致性。
+
+上面的定义不太好理解，我们直接从Android中用到的组合模式说起。我们知道，Android中View的结构是树形结构，每个ViewGroup包含一系列的View，而ViewGroup本身又是View。这是Android中非常典型的组合模式。

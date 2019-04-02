@@ -1,3 +1,8 @@
 http://www.jianshu.com/p/044b5aa5eb10
 
 AsyncTask允许我们执行后台操作并在UI线程中更新结果，而不用去操作threads或handlers。这句解释很明显的告诉了我们：AsyncTask是一个thread和handler的封装。
+
+# AsyncTask在不同android版本的下的差异
+
+这里我们主要区分一下android3.0前后版本的差异，在android 3.0之前，AsyncTask处理任务时默认采用的是线程池里并行处理任务的方式，而在android 3.0之后 ，为了避免AsyncTask处理任务时所带来的并发错误，AsyncTask则采用了单线程串行执行任务。但是这并不意味着android 3.0之后只能执行串行任务，我们仍然可以采用AsyncTask的executeOnExecutor方法来并行执行任务。
+

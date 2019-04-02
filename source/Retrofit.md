@@ -1,5 +1,7 @@
 http://www.jianshu.com/p/45cb536be2f4
 
+https://itimetraveler.github.io/2018/04/10/%E3%80%90Android%E3%80%91Retrofit%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/#%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F
+
 <div align=center>
 <img src="images/retrofit.png" width = "70%" alt="window" align=center />
 </div>
@@ -248,7 +250,7 @@ public class LearnRetrofit {
 而真正搞事情的是 serviceMethod.callAdapter.adapt(okHttpCall); 这句代码。
 
 # CallAdapter.Factory 
-在 Retrofit 中默认的 callAdapterFactory 是 ExecutorCallAdapterFactory 。我们就进入它的 get(Type returnType, Annotation[] annotations, Retrofit retrofit) 看看吧，返回了一个匿名类 CallAdapter<Object, Call<?>> ，在其中有 adapt(Call<Object> call) 方法：
+在 Retrofit 中默认的 callAdapterFactory 是 ExecutorCallAdapterFactory 。我们就  进入它的 get(Type returnType, Annotation[] annotations, Retrofit retrofit) 看看吧，返回了一个匿名类 CallAdapter<Object, Call<?>> ，在其中有 adapt(Call<Object> call) 方法：
 ```java
   @Override
   public CallAdapter<?, ?> get(Type returnType, Annotation[] annotations, Retrofit retrofit) {

@@ -208,3 +208,226 @@ startActivityLocked()
 startActivityUncheckedLocked()
  ->
 ActivityStack.resumeTopActivitiesLocked()
+
+
+http://gityuan.com/2017/04/09/android_context/
+
+# performLaunchActivity
+startActivity的过程最终会在目标进程执行performLaunchActivity()方法, 该方法主要功能:
+
+* 创建对象LoadedApk;
+* 创建对象Activity;
+* 创建对象Application;
+* 创建对象ContextImpl;
+* Application/ContextImpl都attach到Activity对象;
+* 执行onCreate()等回调;
+
+```java
+private Activity performLaunchActivity(ActivityClientRecord r, Intent customIntent) {
+    ...
+    ActivityInfo aInfo = r.activityInfo;
+    if (r.packageInfo == null) {
+        //step 1: 创建LoadedApk对象
+        r.packageInfo = getPackageInfo(aInfo.applicationInfo, r.compatInfo,
+                Context.CONTEXT_INCLUDE_CODE);
+    }
+    ... //component初始化过程
+
+    java.lang.ClassLoader cl = r.packageInfo.getClassLoader();
+    //step 2: 创建Activity对象
+    Activity activity = mInstrumentation.newActivity(cl, component.getClassName(), r.intent);
+    ...
+
+    //step 3: 创建Application对象
+    Application app = r.packageInfo.makeApplication(false, mInstrumentation);
+
+    if (activity != null) {
+        //step 4: 创建ContextImpl对象
+        Context appContext = createBaseContextForActivity(r, activity);
+        CharSequence title = r.activityInfo.loadLabel(appContext.getPackageManager());
+        Configuration config = new Configuration(mCompatConfiguration);
+        //step5: 将Application/ContextImpl都attach到Activity对象 [见小节4.1]
+        activity.attach(appContext, this, getInstrumentation(), r.token,
+                r.ident, app, r.intent, r.activityInfo, title, r.parent,
+                r.embeddedID, r.lastNonConfigurationInstances, config,
+                r.referrer, r.voiceInteractor);
+
+        ...
+        int theme = r.activityInfo.getThemeResource();
+        if (theme != 0) {
+            activity.setTheme(theme);
+        }
+
+        activity.mCalled = false;
+        if (r.isPersistable()) {
+            //step 6: 执行回调onCreate
+            mInstrumentation.callActivityOnCreate(activity, r.state, r.persistentState);
+        } else {
+            mInstrumentation.callActivityOnCreate(activity, r.state);
+        }
+
+        r.activity = activity;
+        r.stopped = true;
+        if (!r.activity.mFinished) {
+            activity.performStart(); //执行回调onStart
+            r.stopped = false;
+        }
+        if (!r.activity.mFinished) {
+            //执行回调onRestoreInstanceState
+            if (r.isPersistable()) {
+                if (r.state != null || r.persistentState != null) {
+                    mInstrumentation.callActivityOnRestoreInstanceState(activity, r.state,
+                            r.persistentState);
+                }
+            } else if (r.state != null) {
+                mInstrumentation.callActivityOnRestoreInstanceState(activity, r.state);
+            }
+        }
+        ...
+        r.paused = true;
+        mActivities.put(r.token, r);
+    }
+
+    return activity;
+}
+```
+
+# handleCreateService
+整个过程:
+
+* 创建对象LoadedApk;
+* 创建对象Service;
+* 创建对象ContextImpl;
+* 创建对象Application;
+* Application/ContextImpl分别attach到Service对象;
+* 执行onCreate()回调;
+
+```java
+private void handleCreateService(CreateServiceData data) {
+    ...
+    //step 1: 创建LoadedApk
+    LoadedApk packageInfo = getPackageInfoNoCheck(
+        data.info.applicationInfo, data.compatInfo);
+
+    java.lang.ClassLoader cl = packageInfo.getClassLoader();
+    //step 2: 创建Service对象
+    service = (Service) cl.loadClass(data.info.name).newInstance();
+
+    //step 3: 创建ContextImpl对象
+    ContextImpl context = ContextImpl.createAppContext(this, packageInfo);
+    context.setOuterContext(service);
+
+    //step 4: 创建Application对象
+    Application app = packageInfo.makeApplication(false, mInstrumentation);
+
+    //step 5: 将Application/ContextImpl都attach到Activity对象 [见小节4.2]
+    service.attach(context, this, data.info.name, data.token, app,
+            ActivityManagerNative.getDefault());
+
+    //step 6: 执行onCreate回调
+    service.onCreate();
+    mServices.put(data.token, service);
+    ActivityManagerNative.getDefault().serviceDoneExecuting(
+            data.token, SERVICE_DONE_EXECUTING_ANON, 0, 0);
+    ...
+}
+```
+
+# handleReceiver
+整个过程:
+
+* 创建对象LoadedApk;
+* 创建对象BroadcastReceiver;
+* 创建对象Application;
+* 创建对象ContextImpl;
+* 执行onReceive()回调;
+
+说明:
+
+    以上过程是静态广播接收者, 即通过AndroidManifest.xml的标签来申明的BroadcastReceiver;
+    如果是动态广播接收者,则不需要再创建那么多对象, 因为动态广播的注册时进程已创建, 基本对象已创建完成. 那么只需要回调BroadcastReceiver的onReceive()方法即可.
+
+```java
+private void handleReceiver(ReceiverData data) {
+    ...
+    String component = data.intent.getComponent().getClassName();
+    //step 1: 创建LoadedApk对象
+    LoadedApk packageInfo = getPackageInfoNoCheck(
+            data.info.applicationInfo, data.compatInfo);
+
+    IActivityManager mgr = ActivityManagerNative.getDefault();
+    java.lang.ClassLoader cl = packageInfo.getClassLoader();
+    data.intent.setExtrasClassLoader(cl);
+    data.intent.prepareToEnterProcess();
+    data.setExtrasClassLoader(cl);
+    //step 2: 创建BroadcastReceiver对象
+    BroadcastReceiver receiver = (BroadcastReceiver)cl.loadClass(component).newInstance();
+
+    //step 3: 创建Application对象
+    Application app = packageInfo.makeApplication(false, mInstrumentation);
+
+    //step 4: 创建ContextImpl对象
+    ContextImpl context = (ContextImpl)app.getBaseContext();
+    sCurrentBroadcastIntent.set(data.intent);
+    receiver.setPendingResult(data);
+
+    //step 5: 执行onReceive回调 [见小节4.3]
+    receiver.onReceive(context.getReceiverRestrictedContext(), data.intent);
+    ...
+}
+```
+
+# installProvider
+
+该方法主要功能:
+
+* 创建对象LoadedApk;
+* 创建对象ContextImpl;
+* 创建对象ContentProvider;
+* ContextImpl都attach到ContentProvider对象;
+* 执行onCreate回调;
+
+
+```java
+private IActivityManager.ContentProviderHolder installProvider(Context context, IActivityManager.ContentProviderHolder holder, ProviderInfo info, boolean noisy, boolean noReleaseNeeded, boolean stable) {
+    ContentProvider localProvider = null;
+    IContentProvider provider;
+    if (holder == null || holder.provider == null) {
+        Context c = null;
+        ApplicationInfo ai = info.applicationInfo;
+        if (context.getPackageName().equals(ai.packageName)) {
+            c = context;
+        } else if (mInitialApplication != null &&
+                mInitialApplication.getPackageName().equals(ai.packageName)) {
+            c = mInitialApplication;
+        } else {
+            //step 1 && 2: 创建LoadedApk和ContextImpl对象
+            c = context.createPackageContext(ai.packageName,Context.CONTEXT_INCLUDE_CODE);
+        }
+
+        final java.lang.ClassLoader cl = c.getClassLoader();
+        //step 3: 创建ContentProvider对象
+        localProvider = (ContentProvider)cl.loadClass(info.name).newInstance();
+        provider = localProvider.getIContentProvider();
+
+        //step 4: ContextImpl都attach到ContentProvider对象 [见小节4.4]
+        //step 5: 并执行回调onCreate
+        localProvider.attachInfo(c, info);
+    } else {
+        ...
+    }
+    ...
+    return retHolder;
+}
+```
+
+# handleBindApplication
+
+该过程主要功能:
+
+    创建对象LoadedApk
+    创建对象ContextImpl;
+    创建对象Instrumentation;
+    创建对象Application;
+    安装providers;
+    执行Create回调;

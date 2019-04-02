@@ -3,7 +3,7 @@
 <img src="images/glide.jpg" width = "70%" alt="window" align=center />
 </div>
 
-# Glide.with()
+# `Glide.with()`
 ```java
     /**
      * Begin a load with Glide by passing in a context.
@@ -174,6 +174,7 @@
         return glide;
     }
 ```
+
 先创建了GlideBuilder,然后调用其createGlide创建glide, GlideBuilder为Glide设置一些默认配置，而且可以通过GlideModule进行一些延迟的配置和ModelLoaders的注册。
 
 ## Glide.with().load()
@@ -200,7 +201,9 @@
                         glide, requestTracker, lifecycle, optionsApplier));
     }
 ```
+
 load方法继承自父类GenericRequestBuilder：
+
 ```java
     public GenericRequestBuilder<ModelType, DataType, ResourceType, TranscodeType> load(ModelType model) {
         this.model = model;
@@ -209,7 +212,8 @@ load方法继承自父类GenericRequestBuilder：
     }
 ```
 
-## Glide.with().load().into()
+## `Glide.with().load().into()`
+
 ```java
     /**
      * Sets the {@link ImageView} the resource will be loaded into, cancels any existing loads into the view, and frees
@@ -278,13 +282,15 @@ load方法继承自父类GenericRequestBuilder：
         return target;
     }
 ```
+
 经过判断和配置后调用into(context.buildImageViewTarget(view, transcodeClass)),先执行context.buildImageViewTarget,其中参数transcodeClass是创建requestManager调用as方法传进来的(默认Bitmap.class)。可以看出对clazz进行了判断,如果是bitmap返回Target ,如果是drawable返回Target, 最后调用into(Y target)设置资源的Target，并创建，绑定，跟踪，发起请求。
 
 创建了buildRequest,创建请求，如果配置了thumbnail（缩略图）请求，则构建一个ThumbnailRequestCoordinator（包含了FullRequest和ThumbnailRequest）请求，否则简单的构建一个Request。
 
-* buildRequest() -> obtainRequest() -> GenericRequest.obtain() -> GenericRequest.init()
+* `buildRequest() -> obtainRequest() -> GenericRequest.obtain() -> GenericRequest.init()`
 
-* requestTracker.runRequest(request) -> GenericRequest.begin()
+* `requestTracker.runRequest(request) -> GenericRequest.begin()`
+
 ```java
     /**
      * Starts tracking the given request.
@@ -322,7 +328,8 @@ load方法继承自父类GenericRequestBuilder：
     }
 ```
 
-* GenericRequest.onSizeReady() -> Engine.load()
+* `GenericRequest.onSizeReady() -> Engine.load()`
+
 ```java
     /**
      * A callback method that should never be invoked directly.
@@ -352,7 +359,7 @@ load方法继承自父类GenericRequestBuilder：
             logV("finished setup for calling load in " + LogTime.getElapsedMillis(startTime));
         }
         loadedFromMemoryCache = true;
-        loadStatus = engine.loa  d(signature, width, height, dataFetcher, loadProvider, transformation, transcoder,
+        loadStatus = engine.load(signature, width, height, dataFetcher, loadProvider, transformation, transcoder,
                 priority, isMemoryCacheable, diskCacheStrategy, this);
         loadedFromMemoryCache = resource != null;
         if (Log.isLoggable(TAG, Log.VERBOSE)) {
@@ -415,6 +422,7 @@ load方法继承自父类GenericRequestBuilder：
         return new LoadStatus(cb, engineJob);
     }
 ```
+
 Engine类是一个任务创建，发起，回调，管理存活和缓存的资源的类，这Engine的load方法里，loadFromCache(key, isMemoryCacheable)从缓存里面查找资源，loadFromActiveResources(key, isMemoryCacheable)从存活资源里面查找，找到后会将缓存数据放到一个 value 为软引用的 activeResources的map集合中去，然后会将ResourceCallback添加到EngineJob中去。EngineJob是一个调度 DecodeJob任务，添加，移除资源回调，并 notify 回调的类，而DecodeJob是处理来自缓存或者原始的资源，应用转换动画以及 transcode。
 
 <div align=center>
@@ -424,7 +432,8 @@ Engine类是一个任务创建，发起，回调，管理存活和缓存的资�
 在DecodeJob里面，会将资源通过IO流写入磁盘缓存中，再对文件流进行编码，编码时通过设置采样率缩放图片，同时利用Transformation去处理资源，在里面创建了一个BitmapPool的对象池，达到了bitmap的复用节约资源。
 如果加载失败，就会创建EngineRunnable执行Runnable去请求资源、处理资源、缓存资源。
 
-* EnginRunnable.run()
+* `EnginRunnable.run()`
+
 ```java
     @Override
     public void run() {
@@ -472,17 +481,21 @@ Engine类是一个任务创建，发起，回调，管理存活和缓存的资�
         }
     }
 ```
-* EngineJob.start()
+
+* `EngineJob.start()`
+
 ```java
     public void start(EngineRunnable engineRunnable) {
         this.engineRunnable = engineRunnable;
         future = diskCacheService.submit(engineRunnable);
     }
 ```
+
 如果decode成功，就会调用onResourceReady(),将EngineResource资源返回。
 如果目标资源没有在缓存中找到,就会将这个runnable继续交给EngineRunnableManager进行网络请求，然后会调用EngineJob的onResourceReady()，将EngineResource资源返回。
 
 我们来看看decode()方法：
+
 ```java
     private Resource<?> decode() throws Exception {
         // 首次加载从缓存取，加载失败第二次从网络取
@@ -495,6 +508,7 @@ Engine类是一个任务创建，发起，回调，管理存活和缓存的资�
 ```
 
 * DecodeJob.decodeFromSource()
+
 ```java
     public Resource<Z> decodeFromSource() throws Exception {
         Resource<T> decoded = decodeSource(); // 获取数据,并解码
@@ -569,8 +583,11 @@ Engine类是一个任务创建，发起，回调，管理存活和缓存的资�
 ```
 
 ## DataFetcher
+
 DataFetcher有很多实现类, 一般来说我们都是从网络中读取数据。
+
 * HttpUrlFetcher
+
 ```java
     @Override
     public InputStream loadData(Priority priority) throws Exception {
@@ -626,6 +643,7 @@ DataFetcher有很多实现类, 一般来说我们都是从网络中读取数据�
 ```
 
 ## 图片处理 transformEncodeAndTranscode
+
 ```java
     private Resource<Z> transformEncodeAndTranscode(Resource<T> decoded) {
         long startTime = LogTime.getLogTime();
@@ -659,7 +677,9 @@ DataFetcher有很多实现类, 一般来说我们都是从网络中读取数据�
 ```
 
 # GlideModule
+
 Glide在初始化的时候进行了一系列的默认配置, 比如缓存的配置,图片质量的配置等等。事实上,我们可以通过GlideModule定制自己的Glide。GlideModule需要在Manifest文件里设置:
+
 ```xml
 <application>
     ...
@@ -688,7 +708,9 @@ public class GlideModule {
 ```
 
 # Transformation
+
 versoin 3.7.0
+
 ```java
 public class MaskTransformation implements Transformation<Bitmap> {
 
@@ -766,8 +788,8 @@ public class MaskTransformation implements Transformation<Bitmap> {
 
         return BitmapResource.obtain(result, bitmapPool);
     }
-    
-    
+
+
     Bitmap compress(Bitmap source, float scale){
         Matrix matrix = new Matrix();
         matrix.setScale(scale, scale);
