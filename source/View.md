@@ -1,3 +1,5 @@
+https://juejin.im/entry/5a654365f265da3e3e33e258
+
 # View的生命周期方法
 * 创建
     * 构造方法：通常每个控件都会有多个构造方法；如果在代码中创建该控件会用到包含一个Context的构造；如果需要布局中使用，则必须使用带有AttributeSet参数的构造。其它的还有带有主题的构造。
@@ -279,7 +281,7 @@ ACTION_CANCEL 的触发条件是事件被上层拦截，然而我们在 事件�
                             // state now (before scheduling the click) to ensure
                             // the user sees it.
                             setPressed(true, x, y);
-                       }
+                       } 
 
                         if (!mHasPerformedLongPress && !mIgnoreNextUpEvent) {
                             // This is a tap, so remove the longpress check
@@ -974,6 +976,7 @@ View的绘制过程遵循如下几步：
 
 同时，由于整个个View树大小发生了变化，会请求measure()过程以及draw()过程，同样地，只绘制需要“重新绘制”的视图。
 
-#requestFocus()
+# requestFocus()
 
 说明：请求View树的draw()过程，但只绘制“需要重绘”的视图。
+
